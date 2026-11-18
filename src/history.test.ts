@@ -31,7 +31,7 @@ test.each(["Private", "Shared"])("the Stop hook saves a Knowledge base version i
   const before = bytes(path.join(root, ".git"));
   const status = git(root, "--no-optional-locks", "status", "--porcelain");
   expect(await stopHook(root, false)).toBeUndefined();
-  const store = path.join(home, ".fledgy", first, "history.git");
+  const store = path.join(home, ".revelio", first, "history.git");
   expect(fs.existsSync(store)).toBe(true);
   expect(git(root, `--git-dir=${store}`, "show", "--format=", "--all", "--", "knowledge-base/parts/tool-approval.yaml")).toContain("code.ts#run");
   expect(bytes(path.join(root, ".git"))).toEqual(before);
@@ -54,7 +54,7 @@ test("linked worktrees save to separate refs in one History store", async () => 
   const other = path.join(hostRepo({}), "feature");
   git(root, "worktree", "add", "--quiet", "-b", "feature", other);
   await Promise.all([stopHook(root, false), stopHook(other, false)]);
-  const store = path.join(home, ".fledgy", first, "history.git");
+  const store = path.join(home, ".revelio", first, "history.git");
   expect(git(root, `--git-dir=${store}`, "for-each-ref", "--format=%(refname)").split("\n")).toHaveLength(2);
 });
 
@@ -63,7 +63,7 @@ test("a failing store leaves the Stop hook answer unchanged, and failing checks 
   const first = commitAll(root, "app");
   const expected = await stopHook(root, false, home);
   expect(expected).toMatchObject({ decision: "block" });
-  expect(fs.existsSync(path.join(home, ".fledgy", first, "history.git"))).toBe(true);
+  expect(fs.existsSync(path.join(home, ".revelio", first, "history.git"))).toBe(true);
   const blocked = path.join(home, "not-a-directory");
   fs.writeFileSync(blocked, "blocked");
   expect(await stopHook(root, false, blocked)).toEqual(expected);
@@ -71,10 +71,10 @@ test("a failing store leaves the Stop hook answer unchanged, and failing checks 
 
 test("uninstall and switching to Shared keep the History store", async () => {
   const { initShared, uninstall } = await import("./init.js");
-  const root = hostRepo({ ...knowledgeBase("code.ts#run", "backend"), "code.ts": "export function run() {}\n", "node_modules/fledgy/package.json": "{}" });
+  const root = hostRepo({ ...knowledgeBase("code.ts#run", "backend"), "code.ts": "export function run() {}\n", "node_modules/revelio-ai/package.json": "{}" });
   const first = commitAll(root, "app");
   await stopHook(root, false, home);
-  const store = path.join(home, ".fledgy", first, "history.git");
+  const store = path.join(home, ".revelio", first, "history.git");
   const before = bytes(store);
   initShared(root, root);
   expect(bytes(store)).toEqual(before);
@@ -88,7 +88,7 @@ test("removing the whole Knowledge base saves an empty version without changing 
   await stopHook(root, false, home);
   fs.rmSync(path.join(root, "knowledge-base"), { recursive: true });
   expect(await stopHook(root, false, home)).toBeUndefined();
-  const store = path.join(home, ".fledgy", first, "history.git");
+  const store = path.join(home, ".revelio", first, "history.git");
   expect(git(root, `--git-dir=${store}`, "rev-list", "--all", "--count")).toBe("2");
   const latest = git(root, `--git-dir=${store}`, "for-each-ref", "--format=%(objectname)");
   expect(git(root, `--git-dir=${store}`, "ls-tree", "-r", latest)).toBe("");

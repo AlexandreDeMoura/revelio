@@ -1,7 +1,7 @@
 {
-  "name": "fledgy",
+  "name": "revelio-ai",
   "version": "0.2.0",
-  "description": "Understand the app your agent built, without reading its code. Fledgy keeps a plain-words map of every user flow, the parts of the system each step runs through, and a manual QA script for each path, checked against the code after every change.",
+  "description": "Understand the app your agent built, without reading its code. Revelio keeps a plain-words map of every user flow, the parts of the system each step runs through, and a manual QA script for each path, checked against the code after every change.",
   "keywords": [
     "claude-code",
     "claude-code-plugin",
@@ -25,7 +25,7 @@
   },
   "type": "module",
   "bin": {
-    "fledgy": "dist/cli.js"
+    "revelio": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -56,5 +56,5 @@
     "typescript": "^6.0.3",
     "vitest": "^5.0.3"
   },
-  "homepage": "https://fledgy.dev"
+  "homepage": "https://revelio-ai.dev"
 }

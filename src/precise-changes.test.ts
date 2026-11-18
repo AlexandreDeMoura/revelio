@@ -74,7 +74,7 @@ test("a shared file changes only its anchored function and reports other definit
 
 test.each(["Private", "Shared"])("each commit uses its own Knowledge base version in a %s install", async install => {
   const root = hostRepo({ "code.ts": code(1, 1) });
-  const before = commitAll(root, "before Fledgy");
+  const before = commitAll(root, "before Revelio");
   if (install === "Private") fs.appendFileSync(path.join(root, ".git/info/exclude"), "\nknowledge-base/\n");
   for (const [file, text] of Object.entries(knowledgeBase("code.ts#anchored", "backend"))) write(root, file, text);
   write(root, "code.ts", code(2, 1));
@@ -383,7 +383,7 @@ test("a warm request reuses cached commit facts without starting cat-file", asyn
   const { data } = await api(root);
   const cold = await data();
   expect(fs.readFileSync(trace, "utf8")).toContain("cat-file --batch");
-  const cache = path.join(home, ".fledgy", git(root, "rev-list", "--max-parents=0", "HEAD"), "changes-v2");
+  const cache = path.join(home, ".revelio", git(root, "rev-list", "--max-parents=0", "HEAD"), "changes-v2");
   expect(fs.readdirSync(cache).length).toBeGreaterThan(0);
   fs.writeFileSync(trace, "");
   const warm = await data();

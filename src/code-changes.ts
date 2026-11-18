@@ -23,8 +23,8 @@ type DiffFile = { path: string; oldPath: string; before: string; after: string; 
 export type CommitDiff = Commit & { files: DiffFile[] };
 type FileFacts = { before: string[]; after: string[]; outsideDefinitions: boolean; comparable: boolean; deleted: boolean };
 
-const marker = "\0FLEDGY-COMMIT\0";
-const format = `%x00FLEDGY-COMMIT%x00%H%x00%cI%x00%s%x00%b%x00`;
+const marker = "\0REVELIO-COMMIT\0";
+const format = `%x00REVELIO-COMMIT%x00%H%x00%cI%x00%s%x00%b%x00`;
 const diffArgs = ["--raw", "-z", "--no-abbrev", "--patch", "-U0", "-M", "--no-ext-diff", "--no-textconv", "--no-color"];
 
 // Raw paths are NUL-delimited; patch headers are not used to recover filenames.

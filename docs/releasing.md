@@ -7,7 +7,7 @@ The Claude Code plugin and the npm package always use the same version. Keep `ve
 ## Steps
 
 1. **Start from a clean, up-to-date `main`**, and run `npm test`.
-2. **Choose the version.** Fledgy stays on `0.x`: a patch (`0.1.1`) for fixes and small changes, a minor (`0.2.0`) for new features or anything that breaks how it is used.
+2. **Choose the version.** Revelio stays on `0.x`: a patch (`0.1.1`) for fixes and small changes, a minor (`0.2.0`) for new features or anything that breaks how it is used.
 3. **Bump it:**
    ```sh
    npm version patch --no-git-tag-version   # or: npm version minor --no-git-tag-version
@@ -27,13 +27,13 @@ The Claude Code plugin and the npm package always use the same version. Keep `ve
    gh run watch
    ```
    The workflow installs, checks that the tag matches `package.json`, runs `npm test`, then runs `npm publish`.
-6. **Check npm:** `npm view fledgy --prefer-online dist-tags` shows the new version as `latest`. Without `--prefer-online`, npm may answer from its cache.
+6. **Check npm:** `npm view revelio-ai --prefer-online dist-tags` shows the new version as `latest`. Without `--prefer-online`, npm may answer from its cache.
 7. **Write the changelog** in GitHub Releases, by hand:
    ```sh
    gh release create vX.Y.Z --title "X.Y.Z" --notes "<what changed, for a Builder>"
    ```
 
-Builders get the new version with `npx fledgy@latest init`.
+Builders get the new version with `npx revelio-ai@latest init`.
 
 ## If something goes wrong
 

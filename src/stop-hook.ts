@@ -30,12 +30,12 @@ export async function stopHook(repoRoot: string, sentBackAlready: boolean, home 
     // Personal history must never change the Stop hook's answer.
   }
   if (!failing) return undefined;
-  // No command is suggested to the Builder: in a private install `npx fledgy
+  // No command is suggested to the Builder: in a private install `npx revelio-ai
   // check` would fetch a copy from npm, and the agent knows the right one.
   if (sentBackAlready) {
     return {
       systemMessage:
-        "Fledgy: the knowledge base still fails its check and the agent stopped without fixing it. " +
+        "Revelio: the knowledge base still fails its check and the agent stopped without fixing it. " +
         `Ask it to fix the knowledge base.\n\n${failing}`,
     };
   }

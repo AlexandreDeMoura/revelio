@@ -29,7 +29,7 @@ The Builder is new to this vocabulary. A term is explained once, in plain words,
 - **Deterministic Check**: say "the knowledge base check".
 - **Builder**: say "you".
 
-Part, Anchor, Entity, QA Step and QA Result are left to the guide (`docs/words.md` in Fledgy's repo); use them only when the Builder does.
+Part, Anchor, Entity, QA Step and QA Result are left to the guide (`docs/words.md` in Revelio's repo); use them only when the Builder does.
 
 ## Steps
 
@@ -47,9 +47,9 @@ Part, Anchor, Entity, QA Step and QA Result are left to the guide (`docs/words.m
    Done when the message is written out in your reply.
 3. **Read the session's file and follow it.**
 
-**The explanation** opens a mapping. The Builder is about to wait while you read their whole app, and is likely new to Fledgy, so they are told what is coming and what the words mean. It is the one message that breaks "Say it short", on purpose. Say this, in your own words where the app calls for it (an example Flow or Area from this app is better than the ones below):
+**The explanation** opens a mapping. The Builder is about to wait while you read their whole app, and is likely new to Revelio, so they are told what is coming and what the words mean. It is the one message that breaks "Say it short", on purpose. Say this, in your own words where the app calls for it (an example Flow or Area from this app is better than the ones below):
 
-> Mapping your app with Fledgy. The result is a **knowledge base**: files in `knowledge-base/` that describe your app in plain words, so you can understand it without reading the code.
+> Mapping your app with Revelio. The result is a **knowledge base**: files in `knowledge-base/` that describe your app in plain words, so you can understand it without reading the code.
 > It's made of **Flows**: each is one thing someone does in your app, from what starts it to what they see at the end, like "Start a thread". Flows are grouped into **Areas**, the regions of your app you'd name in conversation, like Chat or Billing.
 > First I read the code for every page, endpoint, scheduled job and incoming event, and come back with the Areas I see, for you to correct. I keep track in a **Mapping record** (`knowledge-base/mapping-record.md`), a working file that's deleted when the mapping is done.
 > Then we go one Area at a time, over several sessions: I list its Flows, you correct the list, then I write them. Nothing is written before you've corrected it.

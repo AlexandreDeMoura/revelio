@@ -26,7 +26,7 @@ export function appDataDirectory(repoRoot: string, home: string): string | undef
   try {
     // A repo can have several first commits; the oldest is listed last.
     const first = git(repoRoot, "rev-list", "--max-parents=0", "HEAD").split("\n").at(-1);
-    return first ? path.join(home, ".fledgy", first) : undefined;
+    return first ? path.join(home, ".revelio", first) : undefined;
   } catch {
     return undefined;
   }

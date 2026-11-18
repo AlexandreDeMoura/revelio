@@ -23,7 +23,7 @@ export function saveKnowledgeBaseVersion(repoRoot: string, home: string): void {
   if (!fs.existsSync(knowledgeBase) && !fs.existsSync(store)) return;
   const checkout = fs.realpathSync(repoRoot);
   const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: checkout, encoding: "utf8" }).trim();
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "fledgy-history-"));
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "revelio-history-"));
   const env = { ...process.env, GIT_INDEX_FILE: path.join(temp, "index"), GIT_OPTIONAL_LOCKS: "0" };
   const git = (...args: string[]) => execFileSync("git", [`--git-dir=${store}`, ...args], {
     cwd: checkout, env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
@@ -48,7 +48,7 @@ export function saveKnowledgeBaseVersion(repoRoot: string, home: string): void {
       if (oldTree === tree && JSON.parse(message!).appCommit === head) return;
     }
     const metadata = { appCommit: head, saved: new Date().toISOString(), checkout };
-    const version = git("-c", "user.name=Fledgy", "-c", "user.email=fledgy@localhost", "-c", "commit.gpgSign=false",
+    const version = git("-c", "user.name=Revelio", "-c", "user.email=revelio@localhost", "-c", "commit.gpgSign=false",
       "commit-tree", tree, ...(previous ? ["-p", previous] : []), "-m", JSON.stringify(metadata));
     git("update-ref", ref, version, previous ?? "");
   } finally {

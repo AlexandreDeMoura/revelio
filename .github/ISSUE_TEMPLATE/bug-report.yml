@@ -1,12 +1,12 @@
 name: Bug report
-description: Something in Fledgy did not work as it should.
+description: Something in Revelio did not work as it should.
 labels: [bug]
 body:
   - type: textarea
     id: what-happened
     attributes:
       label: What happened
-      description: What you did, and what Fledgy did. Paste any error message as it appeared.
+      description: What you did, and what Revelio did. Paste any error message as it appeared.
     validations:
       required: true
   - type: textarea
@@ -25,8 +25,8 @@ body:
     attributes:
       label: Install
       options:
-        - Private (`npx fledgy init`)
-        - Shared (`npx fledgy init --shared`)
+        - Private (`npx revelio-ai init`)
+        - Shared (`npx revelio-ai init --shared`)
         - Not sure
     validations:
       required: true
@@ -34,8 +34,8 @@ body:
     id: versions
     attributes:
       label: Versions
-      description: Fledgy, Node (`node --version`) and Claude Code (`claude --version`).
-      placeholder: fledgy 0.1.0, Node 22.11.0, Claude Code 2.1.0
+      description: Revelio, Node (`node --version`) and Claude Code (`claude --version`).
+      placeholder: revelio-ai 0.3.0, Node 22.11.0, Claude Code 2.1.0
     validations:
       required: true
   - type: input

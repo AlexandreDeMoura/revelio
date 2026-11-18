@@ -19,8 +19,8 @@ How to go from `fledgy` to `revelio-ai`, step by step. [naming-revelio.md](namin
 
 ## Step 0: Settle what could stop the rename
 
-- [ ] **Trademark check** on "Revelio" (EUIPO, USPTO). The name comes from a work licensed by Warner Bros. Of all the steps, only this one can cancel the rename, so do it first.
-- [ ] **Domain** to replace `fledgy.dev` (`revelio.dev` is taken).
+- [x] **Trademark check** on "Revelio" (EUIPO, USPTO). The name comes from a work licensed by Warner Bros. Of all the steps, only this one can cancel the rename, so do it first.
+- [ ] **Domain** to replace `fledgy.dev` (`revelio.dev` is taken): `revelio-ai.dev` chosen, set as `homepage`, still to buy.
 
 ## Step 1: Claim what costs nothing
 
@@ -35,11 +35,11 @@ Work on a branch. Write each test before the change (`npm test`).
 
 Almost every name in `src/init.ts` comes from one constant, `packageName`. The alias, the Stop hook, the instruction marker and the messages all follow from it. Change it, then fix whatever `npm test` reports.
 
-- [ ] **Manifests**
+- [x] **Manifests**
   - `package.json`: `name: "revelio-ai"`, `bin: { "revelio": "dist/cli.js" }`, `homepage` (the new domain), and `description`.
   - `package-lock.json`: run `npm install --package-lock-only` so the name at its top matches.
   - `.claude-plugin/plugin.json`: `name: "revelio"` and `description`. Plugin users have to reinstall, because the skills are now namespaced under the new plugin name.
-- [ ] **CLI, `src/`**
+- [x] **CLI, `src/`**
   - `src/init.ts`: `packageName` and `privateFolder` (`.revelio`).
   - `src/cli.ts`: the usage text, the messages, and `FLEDGY_PACKAGE` → `REVELIO_PACKAGE`.
   - `src/qa-results.ts`: `~/.fledgy` → `~/.revelio`. `history.ts` uses the same folder.
@@ -47,9 +47,9 @@ Almost every name in `src/init.ts` comes from one constant, `packageName`. The a
   - `src/stop-hook.ts`, `src/first-run.ts`: messages and the guide link.
   - `src/code-changes.ts`: `FLEDGY-COMMIT` is internal, so renaming it is only for consistency.
   - Rename `src/git-fledgy.test.ts` to `src/git-revelio.test.ts` and update all the tests.
-- [ ] **Web view, `view/`**: the `<title>`, the logo text, the document titles, the guide link, and the `fledgy-theme` key in localStorage. Renaming that key resets each Builder's chosen theme once, which is acceptable.
-- [ ] **Skills, `skills/`**: the places where the text says "Fledgy". Edit `skills/`, never `.claude/skills/`.
-- [ ] **Links**: leave `github.com/AlexandreDeMoura/fledgy` as it is unless you rename the repo (see step 5).
+- [x] **Web view, `view/`**: the `<title>`, the logo text, the document titles, the guide link, and the `fledgy-theme` key in localStorage. Renaming that key resets each Builder's chosen theme once, which is acceptable.
+- [x] **Skills, `skills/`**: the places where the text says "Fledgy". Edit `skills/`, never `.claude/skills/`.
+- [x] **Links**: leave `github.com/AlexandreDeMoura/fledgy` as it is unless you rename the repo (see step 5).
 
 ## Step 3: Move existing installs over
 
@@ -57,26 +57,26 @@ This step is the real work. With `packageName` changed, `revelio init` no longer
 
 So `init` has to find a Fledgy install and replace it. `uninstall` has to remove a Fledgy install too.
 
-- [ ] **Private install**: move or replace `.fledgy/` with `.revelio/`, and update the local exclude (`.git/info/exclude`).
-- [ ] **`git fledgy` alias**: remove it only if it is still the one Fledgy wrote (the `fledgy.alias` note matches), then write `git revelio`.
-- [ ] **Stop hook**: replace the hook whose command ends in `fledgy" stop-hook`, in `.claude/settings.local.json` (private) or `.claude/settings.json` (shared).
-- [ ] **Instruction line**: replace the line ending in `<!-- fledgy -->` in `CLAUDE.local.md` (private) or `CLAUDE.md` (shared).
-- [ ] **Skills**: `.claude/skills/` is refreshed as usual.
-- [ ] **Per-Builder data**: move `~/.fledgy/<first commit>/`, which holds `history.git` and `qa-results.json`, to `~/.revelio/<first commit>/` when the new folder does not exist yet. This keeps each Builder's history and QA Results.
-- [ ] **Shared install**: the app's `package.json` still depends on `fledgy`. Print the command to switch it (`npm uninstall fledgy && npm install -D revelio-ai`), but do not run it.
-- [ ] `knowledge-base/` does not change.
+- [x] **Private install**: move or replace `.fledgy/` with `.revelio/`, and update the local exclude (`.git/info/exclude`).
+- [x] **`git fledgy` alias**: remove it only if it is still the one Fledgy wrote (the `fledgy.alias` note matches), then write `git revelio`.
+- [x] **Stop hook**: replace the hook whose command ends in `fledgy" stop-hook`, in `.claude/settings.local.json` (private) or `.claude/settings.json` (shared).
+- [x] **Instruction line**: replace the line ending in `<!-- fledgy -->` in `CLAUDE.local.md` (private) or `CLAUDE.md` (shared).
+- [x] **Skills**: `.claude/skills/` is refreshed as usual.
+- [x] **Per-Builder data**: move `~/.fledgy/<first commit>/`, which holds `history.git` and `qa-results.json`, to `~/.revelio/<first commit>/` when the new folder does not exist yet. This keeps each Builder's history and QA Results.
+- [x] **Shared install**: the app's `package.json` still depends on `fledgy`. Print the command to switch it (`npm uninstall fledgy && npm install -D revelio-ai`), but do not run it.
+- [x] `knowledge-base/` does not change.
 
 Prefer moving the files once, in `init`, over reading old locations forever. That way the old paths do not stay in the code.
 
 ## Step 4: Words and docs
 
-- [ ] `README.md`: the new name, `npx revelio-ai init`, and a clear line on what Revelio is (user flows and manual QA, not a code graph). That line sets it apart from `@revelio-tools/revelio`. Pair the name with a qualifier: "Revelio AI", "Revelio for Claude Code".
-- [ ] `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`.
-- [ ] `GLOSSARY.md`: its title is the product name. Rename it, and check that no definition depends on the name.
-- [ ] `docs/words.md` and `docs/dogfooding.md`: `git revelio`, `.revelio/` and `REVELIO_PACKAGE`.
-- [ ] `docs/releasing.md`: `npm view revelio-ai …`, `npx revelio-ai@latest init`, and the trusted publisher settings of the new package.
-- [ ] `.github/ISSUE_TEMPLATE/`: the product name and the commands.
-- [ ] Leave `prototypes/`, `experiments/`, `.scratch/` and `docs/research/` as they are. They record past work.
+- [x] `README.md`: the new name, `npx revelio-ai init`, and a clear line on what Revelio is (user flows and manual QA, not a code graph). That line sets it apart from `@revelio-tools/revelio`. Pair the name with a qualifier: "Revelio AI", "Revelio for Claude Code".
+- [x] `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`.
+- [x] `GLOSSARY.md`: its title is the product name. Rename it, and check that no definition depends on the name.
+- [x] `docs/words.md` and `docs/dogfooding.md`: `git revelio`, `.revelio/` and `REVELIO_PACKAGE`.
+- [x] `docs/releasing.md`: `npm view revelio-ai …`, `npx revelio-ai@latest init`, and the trusted publisher settings of the new package.
+- [x] `.github/ISSUE_TEMPLATE/`: the product name and the commands.
+- [x] Leave `prototypes/`, `experiments/`, `.scratch/` and `docs/research/` as they are. They record past work.
 
 ## Step 5: Set up publishing for `revelio-ai`
 

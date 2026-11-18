@@ -68,7 +68,7 @@ test("results survive a restart of the web view and a change of branch, in one f
   const sent = await (await view(root, before.home)).data();
 
   expect(sent.results[flowId].main.approve).toMatchObject({ state: "passed", note: "", commit: first });
-  expect(sent.resultsFile).toBe(path.join(before.home, ".fledgy", first, "qa-results.json"));
+  expect(sent.resultsFile).toBe(path.join(before.home, ".revelio", first, "qa-results.json"));
   expect(fs.existsSync(sent.resultsFile)).toBe(true);
 });
 

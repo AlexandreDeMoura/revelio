@@ -57,7 +57,7 @@ test("the Stop hook lets the agent stop the second time, and shows the Builder w
   expect(run.status).toBe(0);
   expect(run.answer.decision).toBeUndefined();
   expect(run.answer.systemMessage).toMatch(
-    /^Fledgy: the knowledge base still fails its check and the agent stopped without fixing it\. Ask it to fix the knowledge base\.\n\n/,
+    /^Revelio: the knowledge base still fails its check and the agent stopped without fixing it\. Ask it to fix the knowledge base\.\n\n/,
   );
   expect(run.answer.systemMessage).toContain(
     '✗ Part tool-approval, Anchor "The tool step and its buttons": symbol gone (web/src/tool-step.tsx#ToolStep)',

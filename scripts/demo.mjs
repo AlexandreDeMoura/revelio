@@ -14,9 +14,9 @@ import path from "node:path";
 import { startView } from "../dist/view.js";
 
 const port = Number(process.argv[process.argv.indexOf("--port") + 1]) || 4174;
-const root = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "fledgy-demo-")), "pantry");
+const root = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "revelio-demo-")), "pantry");
 fs.mkdirSync(root);
-const home = fs.mkdtempSync(path.join(os.tmpdir(), "fledgy-demo-home-"));
+const home = fs.mkdtempSync(path.join(os.tmpdir(), "revelio-demo-home-"));
 const git = (args, env = {}) => execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, ...env } }).trim();
 const write = (file, text) => {
   fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });

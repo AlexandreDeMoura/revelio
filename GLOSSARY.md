@@ -1,4 +1,4 @@
-# Fledgy
+# Revelio
 
 A library and set of agent skills that keep a code-pointing knowledge base alongside an AI-built app, so the person shipping it can understand it without reading the code.
 

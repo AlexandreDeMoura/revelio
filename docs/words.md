@@ -1,6 +1,6 @@
 # Words
 
-Fledgy describes your app with a small set of words. This page explains each one, in the order you meet them: first while your app is mapped, then in the web view. The underlined words in the web view link here, and each entry starts with the same sentence the view shows.
+Revelio describes your app with a small set of words. This page explains each one, in the order you meet them: first while your app is mapped, then in the web view. The underlined words in the web view link here, and each entry starts with the same sentence the view shows.
 
 The examples use an app you probably know: Claude on the web, at claude.ai. Its Areas, Flows and code below are imagined to show the words, not taken from its real code.
 
@@ -26,7 +26,7 @@ A region of your app you’d name in conversation, like Chat or Billing. Every F
 
 Claude on the web might have: Sign-in, Conversations, Composer, Projects, Billing and Settings. Composer is everything that shapes a message before it’s sent: adding files, skills, connectors or a design system, turning on Research, and picking the model and its thinking effort. Billing is about choosing a plan, paying for it, and getting the invoices.
 
-Good to know: when it first reads your code, Fledgy proposes the Areas it sees, and you correct them before any Flow is written. Areas don’t nest. A Flow can be moved to another Area and stays the same Flow.
+Good to know: when it first reads your code, Revelio proposes the Areas it sees, and you correct them before any Flow is written. Areas don’t nest. A Flow can be moved to another Area and stays the same Flow.
 
 ### Flow
 
@@ -50,7 +50,7 @@ Who the Flow is done by: a person in a role, a schedule, or another system.
 
 In Claude on the web, someone on the Free plan, a Pro subscriber, or the admin of a Team. *Renew a subscription* is done by a schedule, and *Handle a failed renewal* by the payment provider, which tells the app a card was refused.
 
-Good to know: each app has a short list of Actors, each with a name. Fledgy says “a Pro subscriber” or “the people using the app” rather than “Actor”. The Actor doesn’t always start the Flow: something the app does can call for them, like an agent pausing to ask for approval before using a tool that accesses your Gmail.
+Good to know: each app has a short list of Actors, each with a name. Revelio says “a Pro subscriber” or “the people using the app” rather than “Actor”. The Actor doesn’t always start the Flow: something the app does can call for them, like an agent pausing to ask for approval before using a tool that accesses your Gmail.
 
 ### Trigger
 
@@ -134,7 +134,7 @@ How many steps of the Flow’s tests by hand (its Manual QA Checks) you recorded
 
 *Upgrade to Pro* has 12 steps across its four Manual QA Checks. With 9 recorded as passed, its chip reads “QA 9/12 passed”. Once one fails, it reads “QA 1 failed”.
 
-Good to know: each step’s result is Passed, Failed or [Could not perform](#could-not-perform), with an optional note. Fledgy also records the commit, the moment, and whether the Flow had changes [not committed](#not-committed) at that moment. Only your latest result per step is kept. Results are yours alone: they live on your computer in `~/.fledgy/`, never in the knowledge base or in git, and they are the same in every branch, worktree and clone of the repo. A change to the Flow never clears them: the web view tells you what changed since, and you record a step again or reset it.
+Good to know: each step’s result is Passed, Failed or [Could not perform](#could-not-perform), with an optional note. Revelio also records the commit, the moment, and whether the Flow had changes [not committed](#not-committed) at that moment. Only your latest result per step is kept. Results are yours alone: they live on your computer in `~/.revelio/`, never in the knowledge base or in git, and they are the same in every branch, worktree and clone of the repo. A change to the Flow never clears them: the web view tells you what changed since, and you record a step again or reset it.
 
 ### Could not perform
 
@@ -160,7 +160,7 @@ A place where something outside your app starts something inside it: a page, an 
 
 In Claude on the web: the page `/new`, where a chat starts, the job that renews subscriptions each month, or the event the payment provider sends when a renewal fails.
 
-Good to know: every Flow starts at one. One Entry point can serve several Flows, and some serve none. Fledgy lists them all when it first reads your code, so that no part of your app is left out without a reason. The agent says “pages, endpoints, scheduled jobs and incoming events”; the word itself only shows up as a column in the [Mapping record](#mapping-record).
+Good to know: every Flow starts at one. One Entry point can serve several Flows, and some serve none. Revelio lists them all when it first reads your code, so that no part of your app is left out without a reason. The agent says “pages, endpoints, scheduled jobs and incoming events”; the word itself only shows up as a column in the [Mapping record](#mapping-record).
 
 ### Pilot
 
@@ -186,8 +186,8 @@ The program that checks what can be checked without judgment: that the knowledge
 
 If `upgrade_plan` in `api/billing/routes.py` is renamed and *Plan change* is not updated, the check fails on its Anchor “The upgrade request”.
 
-Good to know: it runs each time the agent stops. If it fails, the agent is sent back once to fix the knowledge base. If it still fails when the agent stops again, you are shown what is left: ask the agent to fix it. You can run it yourself with `git fledgy check` (private install) or `npx fledgy check` (shared install). It can’t tell whether the words are true: that is the agent’s judgment, and what your Manual QA Checks put to the test. The agent may call it the Deterministic Check.
+Good to know: it runs each time the agent stops. If it fails, the agent is sent back once to fix the knowledge base. If it still fails when the agent stops again, you are shown what is left: ask the agent to fix it. You can run it yourself with `git revelio check` (private install) or `npx revelio-ai check` (shared install). It can’t tell whether the words are true: that is the agent’s judgment, and what your Manual QA Checks put to the test. The agent may call it the Deterministic Check.
 
 ---
 
-Contributing to Fledgy? [`GLOSSARY.md`](../GLOSSARY.md) has the exact definitions the code and the skills use.
+Contributing to Revelio? [`GLOSSARY.md`](../GLOSSARY.md) has the exact definitions the code and the skills use.

@@ -38,7 +38,7 @@ const THEMES = ['system', 'light', 'dark'];
 const lightSystem = matchMedia('(prefers-color-scheme: light)');
 function savedTheme() {
   try {
-    const t = localStorage.getItem('fledgy-theme');
+    const t = localStorage.getItem('revelio-theme');
     return THEMES.includes(t) ? t : 'dark';
   } catch {
     return 'dark';
@@ -53,7 +53,7 @@ function applyTheme() {
 }
 function pickTheme(t) {
   try {
-    localStorage.setItem('fledgy-theme', t);
+    localStorage.setItem('revelio-theme', t);
   } catch {}
   applyTheme();
 }
@@ -330,7 +330,7 @@ function sidebar(fid) {
   };
 
   return `<aside id="sidebar" class="d-side" aria-label="Knowledge base" ${SIDE_OPEN ? '' : 'inert'}>
-    <div class="d-brand"><a class="d-logo" href="/"><i></i>Fledgy</a>${sidebarToggle()}</div>
+    <div class="d-brand"><a class="d-logo" href="/"><i></i>Revelio</a>${sidebarToggle()}</div>
     <div class="d-search">
       <label class="d-sbox">${icon('<circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/>')}
         <input data-search placeholder="Search Flows, Parts…" value="${esc(SEARCH)}" autocomplete="off" spellcheck="false" aria-label="Search Flows, Flows to write and Parts" />
@@ -423,8 +423,8 @@ function overview() {
   if (!written.length) {
     body = `<p class="d-otext">${
       Object.keys(DATA.areas).length
-        ? `The ${term('area', 'Areas')} and the ${term('towrite', 'Flows to write')} are listed on the left. In Claude Code, type <code>/map-the-app</code> to carry on: Fledgy writes the Flows with you, one Area at a time.`
-        : 'In Claude Code, type <code>/map-the-app</code>. Fledgy reads your code, proposes the Areas it sees for you to correct, then writes their Flows with you, one Area at a time. This page fills in as it goes.'
+        ? `The ${term('area', 'Areas')} and the ${term('towrite', 'Flows to write')} are listed on the left. In Claude Code, type <code>/map-the-app</code> to carry on: Revelio writes the Flows with you, one Area at a time.`
+        : 'In Claude Code, type <code>/map-the-app</code>. Revelio reads your code, proposes the Areas it sees for you to correct, then writes their Flows with you, one Area at a time. This page fills in as it goes.'
     }</p>`;
   } else {
     const notCommitted = uncommitted.length
@@ -969,7 +969,7 @@ function render() {
   const kept = Object.fromEntries([...document.querySelectorAll('[data-pane]')].map((el) => [el.dataset.pane, { key: el.dataset.key, top: el.scrollTop }]));
   const searching = document.activeElement?.matches?.('[data-search]');
   const fid = DATA.flows[q('flow')] ? q('flow') : null;
-  document.title = fid ? `${DATA.flows[fid].name} · Fledgy` : q('page') === 'changes' ? `Changes · Fledgy · ${DATA.repo.name}` : `Fledgy · ${DATA.repo.name}`;
+  document.title = fid ? `${DATA.flows[fid].name} · Revelio` : q('page') === 'changes' ? `Changes · Revelio · ${DATA.repo.name}` : `Revelio · ${DATA.repo.name}`;
   hideTip();
   app.innerHTML = `<div class="d-shell ${SIDE_OPEN ? '' : 'is-collapsed'}">${sidebar(fid)}
     <button class="d-backdrop" data-sidebar-toggle aria-label="Close sidebar" tabindex="-1"></button>
