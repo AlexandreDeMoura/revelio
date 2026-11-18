@@ -85,45 +85,43 @@ Prefer moving the files once, in `init`, over reading old locations forever. Tha
 npm's trusted publishing is set per package, with an owner, a repo and a workflow. The repo is now `revelio`.
 
 - [x] npm only lets you add a trusted publisher to a package that already exists. Create `revelio-ai` the way you created `fledgy` (see the `0.0.1-bootstrap` note in [docs/releasing.md](docs/releasing.md)), or publish `0.3.0` once by hand in step 6.
-- [ ] On npmjs.com, in the `revelio-ai` Settings:
+- [x] On npmjs.com, in the `revelio-ai` Settings:
   - **Trusted Publisher**: GitHub Actions, owner `AlexandreDeMoura`, repository `revelio`, workflow `release.yml`, with `npm publish` allowed (a new one allows only `npm stage publish` by default). A new trusted publisher expires if it has not published within 2 days, so add it on the day of the release in step 6.
   - **Publishing access**: "Require two-factor authentication and disallow tokens".
-- [ ] `.github/workflows/release.yml` needs no change. It publishes whatever `package.json` names.
+- [x] `.github/workflows/release.yml` needs no change. It publishes whatever `package.json` names.
 
 - [x] **The GitHub repo is renamed to `revelio`**, and `repository` in `package.json` and `.claude-plugin/plugin.json`, the links in `src/first-run.ts`, `view/view.js`, the issue templates and the docs follow it.
-- [ ] Remove the trusted publisher of `fledgy`, which still names the repo `fledgy`: CI no longer publishes `fledgy`, and its last version is published by hand in step 7.
+- [x] Remove the trusted publisher of `fledgy`, which still names the repo `fledgy`: CI no longer publishes `fledgy`, and its last version is published by hand in step 7.
 
 GitHub redirects the old URL, but do not rely on that.
 
 ## Step 6: Release `revelio-ai` 0.3.0
 
-- [ ] Follow [docs/releasing.md](docs/releasing.md), with `0.3.0` set in `package.json`, `package-lock.json` and `.claude-plugin/plugin.json`.
-- [ ] Check it: `npm view revelio-ai --prefer-online dist-tags`.
-- [ ] Try it on a test repo that has a Fledgy install, both private and shared: `npx revelio-ai@latest init`. Then check `git revelio check`, `git revelio view`, the history and the QA Results.
+- [x] Follow [docs/releasing.md](docs/releasing.md), with `0.3.0` set in `package.json`, `package-lock.json` and `.claude-plugin/plugin.json`.
+- [x] Check it: `npm view revelio-ai --prefer-online dist-tags`.
+- [x] Try it on a test repo that has a Fledgy install, both private and shared: `npx revelio-ai@latest init`. Then check `git revelio check`, `git revelio view`, the history and the QA Results.
 
 ## Step 7: Retire `fledgy`
 
-- [ ] Publish one last `fledgy` (`0.3.0`) from a small folder outside the main package. It should contain only a `package.json` (`name: "fledgy"`, `bin: { "fledgy": … }`) and a script that:
-  - says Fledgy is now Revelio, and
-  - runs `npx revelio-ai@latest` with the same arguments.
-
-  That way `npx fledgy init` still moves people over. Publish it by hand (`npm publish`, with your 2FA code), since CI only publishes the root package.
-- [ ] Deprecate the package:
+- [x] Skipped: publish one last `fledgy` 0.3.0 that forwards to `npx revelio-ai@latest`. Nobody but the Builder used Fledgy before the rename, so `fledgy` stops at 0.2.0.
+- [x] Deprecate the package:
   ```sh
   npm deprecate fledgy "Fledgy is now Revelio: run npx revelio-ai init"
   ```
-- [ ] Existing private installs keep working as they are. `git fledgy` runs the copy in `.fledgy/` until the Builder runs `npx revelio-ai init`.
+- [x] Existing private installs keep working as they are. `git fledgy` runs the copy in `.fledgy/` until the Builder runs `npx revelio-ai init`.
 
 ## Step 8: Move this repo's own install
 
 This repo has a private Fledgy install (`.fledgy/`, `.claude/skills/`, the `<!-- fledgy -->` line in `CLAUDE.local.md`), so it is the first real test of step 3.
 
-- [ ] On the release commit: `npm run build && node dist/cli.js init`. As with Fledgy, `npx revelio-ai init` does not work inside the package itself.
+- [x] On the release commit: `npm run build && node dist/cli.js init`. As with Fledgy, `npx revelio-ai init` does not work inside the package itself.
 - [ ] Check that `.fledgy/` is gone, that `git revelio check` passes, and that `git revelio view` still shows the history and the QA Results.
 
 ## Step 9: Later
 
 - [ ] `create-revelio`: a small package whose `bin` runs `revelio-ai init`, so `npm init revelio` works. It can live in `packages/create-revelio/` and be published by hand, since it will rarely change.
+  - [x] Built in `packages/create-revelio/`, with its tests run by `npm test`.
+  - [ ] Published by hand (see the `create-revelio` section of [docs/releasing.md](docs/releasing.md)), then `npm init revelio` added to `README.md`.
 - [ ] The VS Code extension under the publisher `revelio-ai` (`name: "revelio"`, `displayName: "Revelio AI"`), published only when it is ready.
 - [ ] If the owner of `revelio` agrees to transfer it, make `npx revelio init` the main command and keep `revelio-ai` working.
 

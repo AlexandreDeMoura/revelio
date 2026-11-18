@@ -1,0 +1,30 @@
+{
+  "name": "create-revelio",
+  "version": "0.1.0",
+  "description": "Installs Revelio in your app: npm init revelio runs npx revelio-ai init.",
+  "keywords": [
+    "revelio",
+    "revelio-ai",
+    "claude-code",
+    "knowledge-base",
+    "manual-qa"
+  ],
+  "license": "MIT",
+  "author": "Alexandre de Moura",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexandreDeMoura/revelio.git",
+    "directory": "packages/create-revelio"
+  },
+  "homepage": "https://revelio-ai.dev",
+  "type": "module",
+  "bin": {
+    "create-revelio": "cli.js"
+  },
+  "files": [
+    "cli.js"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}

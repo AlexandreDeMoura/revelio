@@ -41,7 +41,7 @@
     "grammars": "node scripts/copy-grammars.mjs",
     "build": "npm run grammars && tsc -p tsconfig.build.json",
     "pretest": "npm run build",
-    "test": "vitest run --dir src",
+    "test": "vitest run --dir src && vitest run --dir packages",
     "demo": "npm run build && node scripts/demo.mjs",
     "prepack": "npm run build"
   },

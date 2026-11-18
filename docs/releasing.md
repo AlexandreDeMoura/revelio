@@ -41,6 +41,19 @@ Builders get the new version with `npx revelio-ai@latest init`.
 - **The workflow fails at `npm publish`**: check on npm whether the version went out. npm never accepts the same version twice, so if it did, release the fix as the next version.
 - **CI can't publish at all**: `npm publish` by hand, logged in and with your 2FA code. That version has no provenance.
 
+## `create-revelio`
+
+`packages/create-revelio/` is the small package behind `npm init revelio`. It only runs `npx revelio-ai init`, so a Revelio release does not need a new version of it. It is not part of the `Release` workflow and has its own version, starting at `0.1.0`.
+
+Publish it by hand, only when `packages/create-revelio/` changes:
+
+1. Run `npm test` from the repo root, which also runs its tests.
+2. Bump `version` in `packages/create-revelio/package.json`.
+3. From `packages/create-revelio/`, check the contents with `npm pack --dry-run`, then run `npm publish`, logged in and with your 2FA code. Versions published this way have no provenance.
+4. Check: `npm view create-revelio --prefer-online dist-tags`.
+
+After the first publish, set its **Publishing access** on npmjs.com to "Require two-factor authentication and disallow tokens", like `revelio-ai`.
+
 ## npm settings that must stay as they are
 
 On npmjs.com, in the package's Settings:
