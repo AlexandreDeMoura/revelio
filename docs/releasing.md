@@ -51,8 +51,9 @@ Publish it by hand, only when `packages/create-revelio/` changes:
 2. Bump `version` in `packages/create-revelio/package.json`.
 3. From `packages/create-revelio/`, check the contents with `npm pack --dry-run`, then run `npm publish`, logged in and with your 2FA code. Versions published this way have no provenance.
 4. Check: `npm view create-revelio --prefer-online dist-tags`.
+5. Wait a few minutes, then try it: `npm init revelio` in a test repo. Tried too soon after the publish, npm can answer "404 Not Found" for the new tarball and keep answering it for about 5 minutes.
 
-After the first publish, set its **Publishing access** on npmjs.com to "Require two-factor authentication and disallow tokens", like `revelio-ai`.
+Its **Publishing access** on npmjs.com is "Require two-factor authentication and disallow tokens", like `revelio-ai`. Its `0.0.0-stage` placeholder and staged version stay as they are.
 
 ## npm settings that must stay as they are
 

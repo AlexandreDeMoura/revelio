@@ -30,6 +30,8 @@ In the repo, run:
 npx revelio-ai init
 ```
 
+or, the same thing, `npm init revelio`.
+
 Revelio installs for you only: it puts its copy in `.revelio/`, its skills in `.claude/skills/`, and hides all of it, and the `knowledge-base/` it will write, from git. Nothing changes for anyone else on the repo.
 
 It then offers to open Claude Code and start mapping. Otherwise, open Claude Code at the repo's root and type `/map-the-app`, or just say *Map the app*. Revelio reads your code, proposes the Areas of your app for you to correct, then writes their Flows with you, one Area at a time, over several sessions.

@@ -119,9 +119,9 @@ This repo has a private Fledgy install (`.fledgy/`, `.claude/skills/`, the `<!--
 
 ## Step 9: Later
 
-- [ ] `create-revelio`: a small package whose `bin` runs `revelio-ai init`, so `npm init revelio` works. It can live in `packages/create-revelio/` and be published by hand, since it will rarely change.
+- [x] `create-revelio`: a small package whose `bin` runs `revelio-ai init`, so `npm init revelio` works. It can live in `packages/create-revelio/` and be published by hand, since it will rarely change.
   - [x] Built in `packages/create-revelio/`, with its tests run by `npm test`.
-  - [ ] Published by hand (see the `create-revelio` section of [docs/releasing.md](docs/releasing.md)), then `npm init revelio` added to `README.md`.
+  - [x] Published by hand (see the `create-revelio` section of [docs/releasing.md](docs/releasing.md)), then `npm init revelio` added to `README.md`.
 - [ ] The VS Code extension under the publisher `revelio-ai` (`name: "revelio"`, `displayName: "Revelio AI"`), published only when it is ready.
 - [ ] If the owner of `revelio` agrees to transfer it, make `npx revelio init` the main command and keep `revelio-ai` working.
 
