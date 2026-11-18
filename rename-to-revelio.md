@@ -49,13 +49,15 @@ Almost every name in `src/init.ts` comes from one constant, `packageName`. The a
   - Rename `src/git-fledgy.test.ts` to `src/git-revelio.test.ts` and update all the tests.
 - [x] **Web view, `view/`**: the `<title>`, the logo text, the document titles, the guide link, and the `fledgy-theme` key in localStorage. Renaming that key resets each Builder's chosen theme once, which is acceptable.
 - [x] **Skills, `skills/`**: the places where the text says "Fledgy". Edit `skills/`, never `.claude/skills/`.
-- [x] **Links**: leave `github.com/AlexandreDeMoura/fledgy` as it is unless you rename the repo (see step 5).
+- [x] **Links**: `github.com/AlexandreDeMoura/revelio`, since the repo is renamed (see step 5).
 
 ## Step 3: Move existing installs over
 
 This step is the real work. With `packageName` changed, `revelio init` no longer recognizes anything Fledgy wrote. On a repo with a Fledgy install it would add a second Stop hook, a second instruction line and a second alias. The old hook would keep running the old `.fledgy/` copy.
 
 So `init` has to find a Fledgy install and replace it. `uninstall` has to remove a Fledgy install too.
+
+A box here is ticked once the code does it. This repo's own Fledgy install moves over later, in step 8.
 
 - [x] **Private install**: move or replace `.fledgy/` with `.revelio/`, and update the local exclude (`.git/info/exclude`).
 - [x] **`git fledgy` alias**: remove it only if it is still the one Fledgy wrote (the `fledgy.alias` note matches), then write `git revelio`.
@@ -80,17 +82,16 @@ Prefer moving the files once, in `init`, over reading old locations forever. Tha
 
 ## Step 5: Set up publishing for `revelio-ai`
 
-npm's trusted publishing is set per package, with an owner, a repo and a workflow. The repo can stay `fledgy`.
+npm's trusted publishing is set per package, with an owner, a repo and a workflow. The repo is now `revelio`.
 
-- [ ] npm only lets you add a trusted publisher to a package that already exists. Create `revelio-ai` the way you created `fledgy` (see the `0.0.1-bootstrap` note in [docs/releasing.md](docs/releasing.md)), or publish `0.3.0` once by hand in step 6.
+- [x] npm only lets you add a trusted publisher to a package that already exists. Create `revelio-ai` the way you created `fledgy` (see the `0.0.1-bootstrap` note in [docs/releasing.md](docs/releasing.md)), or publish `0.3.0` once by hand in step 6.
 - [ ] On npmjs.com, in the `revelio-ai` Settings:
-  - **Trusted Publisher**: GitHub Actions, owner `AlexandreDeMoura`, repository `fledgy`, workflow `release.yml`.
+  - **Trusted Publisher**: GitHub Actions, owner `AlexandreDeMoura`, repository `revelio`, workflow `release.yml`, with `npm publish` allowed (a new one allows only `npm stage publish` by default). A new trusted publisher expires if it has not published within 2 days, so add it on the day of the release in step 6.
   - **Publishing access**: "Require two-factor authentication and disallow tokens".
 - [ ] `.github/workflows/release.yml` needs no change. It publishes whatever `package.json` names.
 
-**Renaming the GitHub repo to `revelio` is optional.** If you do it:
-- update the trusted publisher on both `revelio-ai` and `fledgy`, or CI publishing breaks;
-- update `repository` in `package.json` and `.claude-plugin/plugin.json`, and the links in `src/first-run.ts`, `view/view.js`, the issue templates and the docs.
+- [x] **The GitHub repo is renamed to `revelio`**, and `repository` in `package.json` and `.claude-plugin/plugin.json`, the links in `src/first-run.ts`, `view/view.js`, the issue templates and the docs follow it.
+- [ ] Remove the trusted publisher of `fledgy`, which still names the repo `fledgy`: CI no longer publishes `fledgy`, and its last version is published by hand in step 7.
 
 GitHub redirects the old URL, but do not rely on that.
 

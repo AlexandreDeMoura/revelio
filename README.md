@@ -60,7 +60,7 @@ git revelio view
 
 ## Feedback
 
-Revelio is young, and feedback is the most useful thing you can give it. Report a bug in [Issues](https://github.com/AlexandreDeMoura/fledgy/issues). Ask a question, share an idea, or show what you mapped in [Discussions](https://github.com/AlexandreDeMoura/fledgy/discussions).
+Revelio is young, and feedback is the most useful thing you can give it. Report a bug in [Issues](https://github.com/AlexandreDeMoura/revelio/issues). Ask a question, share an idea, or show what you mapped in [Discussions](https://github.com/AlexandreDeMoura/revelio/discussions).
 
 ## License
 

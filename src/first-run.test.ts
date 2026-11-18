@@ -3,7 +3,7 @@ import { type FirstRun, offerToMap } from "./first-run.js";
 
 const next =
   "Next: open Claude Code here and type /map-the-app\n" +
-  "Then: git revelio view, to read what it writes.   Guide: https://github.com/AlexandreDeMoura/fledgy/tree/main/docs";
+  "Then: git revelio view, to read what it writes.   Guide: https://github.com/AlexandreDeMoura/revelio/tree/main/docs";
 
 // A Builder who just ran init in a terminal, with Claude Code installed and
 // nothing mapped yet, answering the question with `answer`.

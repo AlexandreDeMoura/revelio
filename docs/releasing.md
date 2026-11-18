@@ -45,6 +45,6 @@ Builders get the new version with `npx revelio-ai@latest init`.
 
 On npmjs.com, in the package's Settings:
 
-- **Trusted Publisher**: GitHub Actions, owner `AlexandreDeMoura`, repository `fledgy`, workflow `release.yml`, no environment. Renaming the workflow file breaks publishing until this is updated.
+- **Trusted Publisher**: GitHub Actions, owner `AlexandreDeMoura`, repository `revelio`, workflow `release.yml`, no environment, with `npm publish` allowed and not only `npm stage publish`, since the workflow runs `npm publish`. Renaming the workflow file breaks publishing until this is updated.
 - **Publishing access**: "Require two-factor authentication and disallow tokens".
-- **Staged versions**: `0.0.1-bootstrap` sits in staging from the first release. Never approve it, which would publish it, and never reject it.
+- **Staged versions**: `0.0.1-bootstrap` sits in staging since the package was created, next to the public `0.0.0-stage` placeholder npm added then. Never approve it, which would publish it, and never reject it.

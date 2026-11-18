@@ -2,7 +2,7 @@
 
 Thank you for looking. Revelio is young, and the most useful thing you can give it now is feedback.
 
-- **Tried it?** Tell us what happened, good or bad. A bug goes in an [issue](https://github.com/AlexandreDeMoura/fledgy/issues/new/choose). A question, an idea or a map you made goes in [Discussions](https://github.com/AlexandreDeMoura/fledgy/discussions).
+- **Tried it?** Tell us what happened, good or bad. A bug goes in an [issue](https://github.com/AlexandreDeMoura/revelio/issues/new/choose). A question, an idea or a map you made goes in [Discussions](https://github.com/AlexandreDeMoura/revelio/discussions).
 - **Want to change the code?** Open an issue first and say what you have in mind, so we can agree on it before you spend time on a pull request.
 - **Before a pull request**, run `npm test`. It builds the package and runs every test.
 

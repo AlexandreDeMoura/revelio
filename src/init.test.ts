@@ -58,7 +58,7 @@ test("init on a repo with no .claude/ installs the skills, the Stop hook and the
     "Revelio is installed for this repo's team: commit what it added.\n" +
       "  .claude/skills/  .claude/settings.json  CLAUDE.md\n\n" +
       "Next: open Claude Code at the repo root and type /map-the-app\n" +
-      "Then: npx revelio-ai view in web/, to read what it writes.   Guide: https://github.com/AlexandreDeMoura/fledgy/tree/main/docs\n",
+      "Then: npx revelio-ai view in web/, to read what it writes.   Guide: https://github.com/AlexandreDeMoura/revelio/tree/main/docs\n",
   );
 });
 
@@ -162,7 +162,7 @@ test("init installs Revelio for the Builder only: the library in .revelio/, the 
     /^Revelio is installed for you only: git sees none of what it added\.\n  \.revelio\/  \.claude\/skills\/  \.claude\/settings\.local\.json  CLAUDE\.local\.md\n/,
   );
   expect(run.stdout).toMatch(
-    /\n\nNext: open Claude Code here and type \/map-the-app\nThen: git revelio view, to read what it writes\. {3}Guide: https:\/\/github\.com\/AlexandreDeMoura\/fledgy\/tree\/main\/docs\n$/,
+    /\n\nNext: open Claude Code here and type \/map-the-app\nThen: git revelio view, to read what it writes\. {3}Guide: https:\/\/github\.com\/AlexandreDeMoura\/revelio\/tree\/main\/docs\n$/,
   );
   expect(fs.existsSync(path.join(root, ".revelio/node_modules/.bin/revelio"))).toBe(true);
   expect(read(root, ".claude/skills/map-the-app/SKILL.md")).toMatch(/^---\nname: map-the-app\n/);

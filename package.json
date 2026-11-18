@@ -21,7 +21,7 @@
   "author": "Alexandre de Moura",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AlexandreDeMoura/fledgy.git"
+    "url": "git+https://github.com/AlexandreDeMoura/revelio.git"
   },
   "type": "module",
   "bin": {

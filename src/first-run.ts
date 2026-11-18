@@ -16,7 +16,7 @@ export type FirstRun = {
   openClaude: () => void;
 };
 
-const guide = "https://github.com/AlexandreDeMoura/fledgy/tree/main/docs";
+const guide = "https://github.com/AlexandreDeMoura/revelio/tree/main/docs";
 
 export async function offerToMap({ where, view, ask, claudeOnPath, mapped, print, openClaude }: FirstRun): Promise<void> {
   if (ask && claudeOnPath && !mapped) {

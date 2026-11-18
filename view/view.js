@@ -68,7 +68,7 @@ const flowHref = (fid, extra = {}) => {
 
 // ---------- the words: a tooltip on each term, with its sentence and a link into the guide ----------
 
-const GUIDE = 'https://github.com/AlexandreDeMoura/fledgy/blob/main/docs/words.md';
+const GUIDE = 'https://github.com/AlexandreDeMoura/revelio/blob/main/docs/words.md';
 // One sentence per term the view shows, the same as in docs/words.md, where each term is a heading.
 // The last two are the view's own and have no entry in the guide.
 const WORDS = {
