@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run the Revelio extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--disable-extensions",
+        "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
+      ],
+      "outFiles": ["${workspaceFolder}/packages/vscode-extension/dist/**/*.js"],
+      "preLaunchTask": "vscode-extension: watch"
+    }
+  ]
+}

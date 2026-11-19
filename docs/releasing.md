@@ -62,3 +62,7 @@ On npmjs.com, in the package's Settings:
 - **Trusted Publisher**: GitHub Actions, owner `AlexandreDeMoura`, repository `revelio`, workflow `release.yml`, no environment, with `npm publish` allowed and not only `npm stage publish`, since the workflow runs `npm publish`. Renaming the workflow file breaks publishing until this is updated.
 - **Publishing access**: "Require two-factor authentication and disallow tokens".
 - **Staged versions**: `0.0.1-bootstrap` sits in staging since the package was created, next to the public `0.0.0-stage` placeholder npm added then. Never approve it, which would publish it, and never reject it.
+
+## The VS Code extension
+
+`packages/vscode-extension/` is the VS Code extension, `revelio` under the Marketplace publisher `revelio-ai`. It has its own version, starting at `0.0.1`, and is not part of the `Release` workflow. It is not published yet: a removed extension's name can never be used again, so publish it only once it is ready. Until then, `npm run package` in that folder builds a `.vsix` to install by hand (see its `DEVELOPING.md`).

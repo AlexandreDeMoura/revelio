@@ -1,0 +1,17 @@
+{
+  // The extension host code, which runs in VS Code's Node. The webview and the integration
+  // tests have their own tsconfig.json. esbuild and Vite do the building; tsc only checks types.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "types": ["node", "vscode"],
+    "noEmit": true
+  },
+  "include": ["src", "vite.config.mts", "vitest.config.mts"]
+}

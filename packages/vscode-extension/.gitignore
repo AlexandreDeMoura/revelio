@@ -1,0 +1,4 @@
+# dist/ and node_modules/ are ignored from the repo root.
+out/
+.vscode-test/
+*.vsix

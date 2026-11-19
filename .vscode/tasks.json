@@ -1,0 +1,48 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "vscode-extension: watch",
+      "dependsOn": ["vscode-extension: watch host", "vscode-extension: watch webview"],
+      "problemMatcher": []
+    },
+    {
+      "label": "vscode-extension: watch host",
+      "type": "npm",
+      "script": "watch:host",
+      "path": "packages/vscode-extension",
+      "isBackground": true,
+      "presentation": { "group": "vscode-extension", "reveal": "never" },
+      "problemMatcher": {
+        "owner": "esbuild",
+        "fileLocation": ["relative", "${workspaceFolder}/packages/vscode-extension"],
+        "pattern": [
+          { "regexp": "^✘ \\[ERROR\\] (.*)$", "message": 1 },
+          { "regexp": "^\\s+(.*):(\\d+):(\\d+):$", "file": 1, "line": 2, "column": 3 }
+        ],
+        "background": {
+          "activeBegin": true,
+          "beginsPattern": "^\\[watch\\] build started",
+          "endsPattern": "^\\[watch\\] build finished"
+        }
+      }
+    },
+    {
+      "label": "vscode-extension: watch webview",
+      "type": "npm",
+      "script": "watch:webview",
+      "path": "packages/vscode-extension",
+      "isBackground": true,
+      "presentation": { "group": "vscode-extension", "reveal": "never" },
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": { "regexp": "^error during build:\\s*(.*)$", "message": 1 },
+        "background": {
+          "activeBegin": true,
+          "beginsPattern": "build started",
+          "endsPattern": "built in|error during build"
+        }
+      }
+    }
+  ]
+}

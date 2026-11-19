@@ -1,0 +1,20 @@
+/* Colours and type come from the editor's theme, through the variables VS Code gives every webview. */
+body {
+  margin: 0;
+  padding: 0 20px;
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+}
+
+.app {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+}
+
+.app h1 {
+  margin: 0;
+  font-weight: 600;
+}

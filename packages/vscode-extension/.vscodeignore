@@ -1,0 +1,8 @@
+# The packaged extension holds only what VS Code runs: everything is excluded, then let back in.
+**
+!dist/extension.js
+!dist/webview/webview.js
+!dist/webview/webview.css
+!package.json
+!README.md
+!LICENSE

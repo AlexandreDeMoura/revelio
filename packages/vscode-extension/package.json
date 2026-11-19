@@ -1,0 +1,70 @@
+{
+  "name": "revelio",
+  "displayName": "Revelio AI",
+  "description": "Understand the app your agent built, without reading its code: Revelio's map of your app, inside VS Code.",
+  "version": "0.0.1",
+  "publisher": "revelio-ai",
+  "private": true,
+  "license": "MIT",
+  "author": "Alexandre de Moura",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexandreDeMoura/revelio.git",
+    "directory": "packages/vscode-extension"
+  },
+  "homepage": "https://revelio-ai.dev",
+  "bugs": {
+    "url": "https://github.com/AlexandreDeMoura/revelio/issues"
+  },
+  "categories": [
+    "Other"
+  ],
+  "engines": {
+    "vscode": "^1.105.0"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onWebviewPanel:revelio.view"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "revelio.open",
+        "title": "Open",
+        "category": "Revelio"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node esbuild.mjs && vite build",
+    "watch:host": "node esbuild.mjs --watch",
+    "watch:webview": "vite build --watch",
+    "typecheck": "tsc -p tsconfig.json && tsc -p webview/tsconfig.json && tsc -p test/integration/tsconfig.json",
+    "test": "vitest run",
+    "test:integration": "npm run build && node esbuild.mjs --integration && vscode-test",
+    "package": "vsce package --no-dependencies",
+    "vscode:prepublish": "npm run typecheck && node esbuild.mjs --production && vite build"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/vscode": "~1.105.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.1.1",
+    "esbuild": "^0.28.2",
+    "jsdom": "^31.0.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  // The webview: React in the browser VS Code embeds, with no access to Node or the vscode API.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "types": ["vite/client"],
+    "noEmit": true
+  },
+  "include": ["src"]
+}

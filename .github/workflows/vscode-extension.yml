@@ -1,0 +1,32 @@
+# Checks the VS Code extension whenever it changes: types, unit tests, integration tests
+# inside a real VS Code, and that it packages. It publishes nothing.
+name: VS Code extension
+on:
+  push:
+    branches: [main]
+    paths: ['packages/vscode-extension/**', '.github/workflows/vscode-extension.yml']
+  pull_request:
+    paths: ['packages/vscode-extension/**', '.github/workflows/vscode-extension.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/vscode-extension
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: xvfb-run -a npm run test:integration # VS Code needs a display, even in CI
+      - run: npm run package
