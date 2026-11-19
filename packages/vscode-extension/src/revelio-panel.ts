@@ -1,11 +1,13 @@
 import os from "node:os";
 import path from "node:path";
 import * as vscode from "vscode";
+import { qaResultsFile } from "../../../src/qa-results.js";
 import { askAgent, openAnchor, openCommit, openFlowFile, openTerminal } from "./actions";
 import { changesMessage } from "./changes-message";
 import { knowledgeBaseMessage } from "./knowledge-base-message";
 import type { ExtensionMessage, FlowChange, WebviewMessage } from "./messages";
 import { changeQaResults, qaResultsMessage, type QaChange } from "./qa-results-message";
+import { watchQaResults } from "./qa-results-watch";
 import { anchoredFiles, refreshFor, refresher, type Refresh } from "./refresh";
 import { newNonce, webviewHtml } from "./webview-html";
 
@@ -37,6 +39,8 @@ export class RevelioPanel {
 
   private readonly disposables: vscode.Disposable[] = [];
   private watcher: vscode.FileSystemWatcher | undefined;
+  // Watches the Builder's QA Results file, so what the web view records shows here too.
+  private qaWatch: { file: string; watcher: vscode.Disposable } | undefined;
   private readonly refresh = refresher((what) => void this.send(what), 150);
   // The files the Anchors of the knowledge base last sent point to.
   private anchored = new Set<string>();
@@ -119,6 +123,7 @@ export class RevelioPanel {
   private async send(what: Refresh): Promise<void> {
     const send = ++this.sends;
     const root = appRoot();
+    this.watchQaResults(root);
     if (what === "knowledgeBase") {
       const message = knowledgeBaseMessage(root);
       this.anchored = message.type === "knowledgeBase" ? anchoredFiles(message.knowledgeBase) : new Set();
@@ -149,6 +154,21 @@ export class RevelioPanel {
     this.watcher?.onDidDelete(changed);
   }
 
+  // Watches the QA Results file of the app open now. It moves with the app's first commit, so it
+  // is found again each time the view sends, as a first commit or another folder can change it.
+  private watchQaResults(root: string | undefined): void {
+    const file = root && qaResultsFile(root, os.homedir());
+    if (file === this.qaWatch?.file) return;
+    this.qaWatch?.watcher.dispose();
+    this.qaWatch = undefined;
+    if (!file) return;
+    try {
+      this.qaWatch = { file, watcher: watchQaResults(file, () => this.postQaResults(appRoot())) };
+    } catch (error) {
+      void vscode.window.showErrorMessage(`Revelio cannot watch your QA Results: ${(error as Error).message}`);
+    }
+  }
+
   private post(message: ExtensionMessage): void {
     void this.panel.webview.postMessage(message);
   }
@@ -157,6 +177,7 @@ export class RevelioPanel {
     if (RevelioPanel.current === this) RevelioPanel.current = undefined;
     this.refresh.stop();
     this.watcher?.dispose();
+    this.qaWatch?.watcher.dispose();
     for (const disposable of this.disposables.splice(0)) disposable.dispose();
   }
 }

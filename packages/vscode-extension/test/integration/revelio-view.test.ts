@@ -5,7 +5,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import * as vscode from "vscode";
+import { recordQaResult } from "../../../../src/qa-results.js";
 import { commitFileUri, openCommit } from "../../src/actions";
+import { watchQaResults } from "../../src/qa-results-watch";
 
 const VIEW_TYPE = "revelio.view";
 
@@ -151,5 +153,28 @@ describe("A commit's changes", () => {
     const { root } = appWithTwoCommits();
     await openCommit(root, "0".repeat(40), ["list.ts"]);
     assert.ok(vscode.window.tabGroups.all.every((group) => group.tabs.length === 0));
+  });
+});
+
+// The web view writes the QA Results in the Builder's home folder, outside the folder open in
+// VS Code, so the Revelio view must watch that file itself to show what the web view records.
+describe("The QA Results file", () => {
+  let watch: vscode.Disposable | undefined;
+  afterEach(() => watch?.dispose());
+
+  it("tells when the web view records a QA Result, even when its folder did not exist yet", async () => {
+    const { root } = appWithTwoCommits();
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "revelio-home-")), ".revelio", "app", "qa-results.json");
+    let changes = 0;
+    watch = watchQaResults(file, () => changes++);
+    // The watcher starts a moment after it is made.
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    recordQaResult(root, file, { flow: "list", path: "main", step: "open" }, false, { state: "passed", note: "" });
+
+    await until(() => changes > 0, "the watcher tells of the new QA Result");
+    const seen = changes;
+    recordQaResult(root, file, { flow: "list", path: "main", step: "open" }, false, { state: "failed", note: "" });
+    await until(() => changes > seen, "the watcher tells of the changed QA Result");
   });
 });
