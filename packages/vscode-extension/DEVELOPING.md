@@ -26,13 +26,69 @@ That code needs the repo root's packages (`yaml`, `web-tree-sitter`) and grammar
 | `npm run typecheck` | Checks the types of the host, the webview and the integration tests. |
 | `npm test` | Runs the unit tests with vitest: the host's in Node, the webview's in jsdom. |
 | `npm run test:integration` | Builds, then runs `test/integration/` inside a VS Code it downloads into `.vscode-test/`. |
-| `npm run package` | Typechecks, builds minified, and writes `revelio-<version>.vsix`. |
+| `npm run package` | Typechecks, bumps the patch version, builds minified, and writes `revelio-<version>.vsix`, removing older ones. |
 
 ## Running it
 
-Run `npm install` here first. Then open the repo root in VS Code and press F5 (fn+F5 on a Mac keyboard), or start "Run the Revelio extension" from Run and Debug. It starts both watchers, then opens a second VS Code window, the Extension Development Host, with only this extension loaded and this repo open, so the view shows this repo's own `knowledge-base/` when it has one (see `docs/dogfooding.md`). The repo opens through `.vscode/extension-host.code-workspace`, since VS Code refuses to open a folder another window already has open: for the same reason, opening the repo folder by hand in that window does nothing. To try another app, open its folder in that window. The Revelio view does not open by itself: run **Revelio: Open** from the Command Palette (Cmd+Shift+P) in that window. After a change, run **Developer: Reload Window** in that window.
+Run `npm install` here first.
 
-To try the packaged extension: `npm run package`, then `code --install-extension revelio-0.0.1.vsix`.
+### Try your changes in VS Code
+
+This is how the Builder tries a change: in the VS Code they use, with the extension installed.
+
+1. `npm run package` builds, bumps the patch version in `package.json` (commit that change with the rest) and writes `revelio-<version>.vsix`, keeping only the newest one. A new version is how VS Code knows the installed extension changed.
+2. `code --install-extension revelio-*.vsix`. `code` is VS Code's own CLI: ⇧⌘P → **Shell Command: Install 'code' command in PATH**. Without it, use **Extensions: Install from VSIX…**.
+3. **Developer: Reload Window** in every window that was already open. Until then, a window runs the extension it had.
+4. ⇧⌘P → **Revelio: Open**.
+
+### Run and Debug (optional)
+
+Open the repo root in VS Code and press F5 (fn+F5 on a Mac keyboard), or start "Run the Revelio extension" from Run and Debug. It starts both watchers, then opens a second VS Code window, the Extension Development Host, with only this extension loaded and this repo open, so the view shows this repo's own `knowledge-base/` when it has one (see `docs/dogfooding.md`). The repo opens through `.vscode/extension-host.code-workspace`, since VS Code refuses to open a folder another window already has open: for the same reason, opening the repo folder by hand in that window does nothing. To try another app, open its folder in that window. The Revelio view does not open by itself: run **Revelio: Open** from the Command Palette (Cmd+Shift+P) in that window. After a change, run **Developer: Reload Window** in that window.
+
+An agent checking a change in real VS Code from its own shell follows `docs/e2e-vscode.md` instead.
+
+## Manual QA
+
+One checklist per thing the view does. Run them in the installed extension (see "Try your changes in VS Code"), in a window open on an app with a `knowledge-base/`, such as this repo when it is dogfooded. When a change adds to or changes what the view does, change its checklist here.
+
+### Opening the view
+
+- [ ] ⇧⌘P → **Revelio: Open** opens a Revelio tab in the editor.
+- [ ] Running it again, with the tab open, brings that tab forward instead of opening a second.
+- [ ] After closing the tab, **Revelio: Open** opens it again.
+- [ ] With the tab open, **Developer: Reload Window** brings it back after the reload, still showing the knowledge base.
+
+### No knowledge base
+
+- [ ] In a window with no folder open, the view says "Open your app's folder in VS Code to see its knowledge base."
+- [ ] In a folder with no `knowledge-base/`, or one with no Flow written yet, the view says "No Flow is written yet."
+- [ ] A Flow file that is not valid YAML makes the view name that file and what is wrong with it.
+
+### The Flows and the Flow page
+
+- [ ] The view opens on the first Flow, or on the Flow it last showed when it was hidden or the window reloaded.
+- [ ] The previous and next arrows go through every Flow in order: the first Flow's previous arrow and the last Flow's next arrow are greyed out, and hovering an arrow names the Flow it goes to.
+- [ ] The breadcrumb names the app, the Area and the Flow.
+- [ ] The Flow page shows the Flow's goal, Actor, Trigger, what comes before it, its Steps and its Outcome, as the Flow file says. A Flow named under "Before it starts" opens when clicked.
+- [ ] The header says "Last changed in" with the commit and how long ago, and "Changes not committed" when code one of the Flow's Anchors points to has changes not yet committed.
+- [ ] The path picker lists the main path and the Variants, with when each is taken. Choosing a Variant shows its Steps and Outcome; a Variant link under a Step does the same.
+- [ ] Clicking a Part opens it under its Step; clicking it again closes it.
+
+### The buttons
+
+- [ ] **Open the Flow file** opens `knowledge-base/flows/<flow>.yaml` beside the view.
+- [ ] An Anchor in an open Part opens its file beside the view, at its symbol. An Anchor whose symbol has moved opens the file at its top, with a warning saying so.
+- [ ] **Ask the agent about this Part**, with Claude Code installed, fills Claude Code's prompt with a question about that Part, without sending it. Without Claude Code, it copies the question and says so: paste it to check.
+
+### Refresh
+
+- [ ] Edit a Flow's `goal` in its file under `knowledge-base/flows/` and save: the view shows the new goal without being reopened.
+- [ ] Change and save the code at one of a Flow's Anchors (inside the function it names, not elsewhere in the file): that Flow shows "Changes not committed".
+- [ ] Commit that change: "Changes not committed" goes away and "Last changed in" shows the new commit.
+
+### Reinstalling
+
+- [ ] After `npm run package`, `code --install-extension revelio-*.vsix` and **Developer: Reload Window**, the Extensions view shows Revelio AI at the version now in `package.json`, and the view has the change.
 
 ## Supported VS Code versions
 

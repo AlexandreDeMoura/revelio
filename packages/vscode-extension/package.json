@@ -42,7 +42,7 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p webview/tsconfig.json && tsc -p test/integration/tsconfig.json",
     "test": "vitest run",
     "test:integration": "npm run build && node esbuild.mjs --integration && vscode-test",
-    "package": "vsce package --no-dependencies",
+    "package": "npm run typecheck && npm version patch --no-git-tag-version && rm -f revelio-*.vsix && vsce package --no-dependencies",
     "vscode:prepublish": "npm run typecheck && node esbuild.mjs --production && vite build"
   },
   "dependencies": {

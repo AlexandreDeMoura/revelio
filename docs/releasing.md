@@ -65,4 +65,4 @@ On npmjs.com, in the package's Settings:
 
 ## The VS Code extension
 
-`packages/vscode-extension/` is the VS Code extension, `revelio` under the Marketplace publisher `revelio-ai`. It has its own version, starting at `0.0.1`, and is not part of the `Release` workflow. It is not published yet: a removed extension's name can never be used again, so publish it only once it is ready. Until then, `npm run package` in that folder builds a `.vsix` to install by hand (see its `DEVELOPING.md`).
+`packages/vscode-extension/` is the VS Code extension, `revelio` under the Marketplace publisher `revelio-ai`. It has its own version, starting at `0.0.1`, and is not part of the `Release` workflow. It is not published yet: a removed extension's name can never be used again, so publish it only once it is ready. Until then, `npm run package` in that folder builds a `.vsix` to install by hand (see its `DEVELOPING.md`). Each `npm run package` bumps its patch version, so VS Code sees a reinstall as an update, and that bump is committed with the change. Since nothing is published, these local bumps do not affect a release: choose the version when publishing it for the first time.
