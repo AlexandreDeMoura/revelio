@@ -9,13 +9,17 @@ The extension is its own package, with its own dependencies, tests and build. Ru
 
 `src/webview-html.ts` writes the page that joins the two. Its Content Security Policy lets in nothing but the extension's own files and runs only the one script carrying a fresh nonce. For that reason the webview is built as a single script with no chunks, and inline scripts or styles in the page do not run.
 
-When the webview needs data from the extension (the knowledge base, QA Results), the two will talk through `webview.postMessage` and `acquireVsCodeApi().postMessage`, with the messages typed in one module both halves import.
+The two talk through `webview.postMessage` and `acquireVsCodeApi().postMessage`. `src/messages.ts` types every message, in both directions, and both halves import it, so it holds only types. When the webview sends `ready`, the extension answers with the knowledge base of the first folder open in VS Code, or with why it has none (`src/knowledge-base-message.ts`).
+
+## Code shared with the web view
+
+The extension reads the knowledge base with the same code as the web view that `git revelio view` serves: `readKnowledgeBase` in the repo root's `src/read-knowledge-base.ts`, which esbuild bundles into `dist/extension.js`. The shape it reads is in `src/knowledge-base.ts`, types only, which the webview may import too. That code needs the repo root's packages (`yaml`), so run `npm install` at the repo root as well as here. A change to either file changes both views.
 
 ## Commands
 
 | Command | What it does |
 | --- | --- |
-| `npm install` | Installs the dependencies. Commit the `package-lock.json` it writes; CI runs `npm ci`. |
+| `npm install` | Installs the dependencies. Run it at the repo root too (see "Code shared with the web view"). Commit the `package-lock.json` it writes; CI runs `npm ci`. |
 | `npm run build` | Builds both halves into `dist/`. |
 | `npm run typecheck` | Checks the types of the host, the webview and the integration tests. |
 | `npm test` | Runs the unit tests with vitest: the host's in Node, the webview's in jsdom. |

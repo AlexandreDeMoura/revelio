@@ -1,4 +1,6 @@
 import * as vscode from "vscode";
+import { knowledgeBaseMessage } from "./knowledge-base-message";
+import type { ExtensionMessage, WebviewMessage } from "./messages";
 import { newNonce, webviewHtml } from "./webview-html";
 
 // The Revelio view: a tab in the editor that shows the webview built into `dist/webview`.
@@ -43,13 +45,27 @@ export class RevelioPanel {
       styleUri: asset("webview.css"),
       nonce: newNonce(),
     });
+    panel.webview.onDidReceiveMessage((message: WebviewMessage) => this.answer(message), null, this.disposables);
     panel.onDidDispose(() => this.dispose(), null, this.disposables);
+  }
+
+  private answer(message: WebviewMessage): void {
+    if (message.type === "ready") this.post(knowledgeBaseMessage(appRoot()));
+  }
+
+  private post(message: ExtensionMessage): void {
+    void this.panel.webview.postMessage(message);
   }
 
   private dispose(): void {
     if (RevelioPanel.current === this) RevelioPanel.current = undefined;
     for (const disposable of this.disposables.splice(0)) disposable.dispose();
   }
+}
+
+// The app whose knowledge base the view shows: the first folder open in VS Code.
+function appRoot(): string | undefined {
+  return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
 
 // Where the webview is built: the only folder it may load files from.

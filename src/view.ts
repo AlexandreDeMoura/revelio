@@ -2,9 +2,8 @@ import fs from "node:fs";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import os from "node:os";
-import path from "node:path";
-import { parse } from "yaml";
 import { changeReader, type ChangedSince } from "./flow-changes.js";
+import type { KnowledgeBase } from "./knowledge-base.js";
 import {
   noteQaResult,
   qaResultAt,
@@ -15,6 +14,7 @@ import {
   type QaResult,
   type QaResults,
 } from "./qa-results.js";
+import { readKnowledgeBase } from "./read-knowledge-base.js";
 
 // The page is plain files with no build step, kept beside `src` and `dist`.
 const pages = new URL("../view/", import.meta.url);
@@ -26,30 +26,6 @@ const served: Record<string, [file: string, type: string]> = {
 };
 
 export type View = { url: string; close: () => Promise<void> };
-
-type Part = { anchors?: { at: string }[] };
-type Step = { id: string; does?: string; sees?: string; system?: string; parts?: string[] };
-type ManualQaCheck = { setup: string[]; steps: { id?: string; do: string; expect: string }[] };
-type Variant = {
-  id: string;
-  name: string;
-  diverges_at: string;
-  when: string;
-  outcome: string;
-  steps: Step[];
-  qa: ManualQaCheck;
-};
-type FlowFile = { outcome: string; steps: Step[]; qa: ManualQaCheck; variants?: Variant[] };
-// One way through a Flow, start to end: the main path or a Variant.
-type Path = {
-  id: string;
-  name: string;
-  outcome: string;
-  steps: (Step & { shared?: true })[];
-  qa: ManualQaCheck;
-  when?: string;
-  divergesAt?: number;
-};
 
 // Serves the web view of the knowledge base at the root of `repoRoot`. The
 // files are read again on every request, so an edit shows on the next load.
@@ -68,7 +44,7 @@ export async function startView(
         const reader = await changeReader(repoRoot, home);
         try {
           if (pathname !== "/api/data") await change(repoRoot, file, pathname, req, reader.changes);
-          const kb = read(repoRoot);
+          const kb = readKnowledgeBase(repoRoot);
           sendJson(res, 200, {
             ...kb,
             changes: reader.changes,
@@ -121,7 +97,7 @@ async function change(repoRoot: string, file: string | undefined, pathname: stri
   const { flow, path: pathId, step, state, note = "" } = await body(req);
   if (typeof note !== "string") throw new Refused(400, "A note is text.");
 
-  const kb = read(repoRoot);
+  const kb = readKnowledgeBase(repoRoot);
   const onPath = Object.hasOwn(kb.flows, String(flow)) ? kb.flows[flow]?.paths.find((path) => path.id === pathId) : undefined;
   if (!onPath) throw new Refused(400, `No path ${pathId} on the Flow ${flow}.`);
   if (pathname === "/api/result-reset") return removeQaResults(file, { flow, path: pathId });
@@ -149,7 +125,7 @@ async function body(req: http.IncomingMessage) {
 // happened to its Flow since. A result whose Flow, path or QA Step is gone
 // stays in the file and is not shown.
 async function shown(
-  kb: ReturnType<typeof read>,
+  kb: KnowledgeBase,
   reader: Awaited<ReturnType<typeof changeReader>>,
   results: QaResults,
 ) {
@@ -168,53 +144,5 @@ async function shown(
   return out;
 }
 
-function read(repoRoot: string) {
-  const kb = (...below: string[]) => path.join(repoRoot, "knowledge-base", ...below);
-  return {
-    repo: { name: path.basename(repoRoot), root: repoRoot },
-    actors: readYaml(kb("actors.yaml"), (actors) => actors) ?? {},
-    areas: readYaml(kb("areas.yaml"), (areas) => areas) ?? {},
-    flows: readById(kb("flows"), ({ outcome, steps, qa, variants, ...facts }: FlowFile) => ({
-      ...facts,
-      paths: paths({ outcome, steps, qa, variants }),
-    })),
-    parts: readById(kb("parts"), (part: Part) => part),
-  };
-
-  // Whatever goes wrong with a file, the error says which file.
-  function readYaml<In, Out>(file: string, shape: (content: In) => Out): Out | undefined {
-    if (!fs.existsSync(file)) return undefined;
-    try {
-      return shape(parse(fs.readFileSync(file, "utf8")));
-    } catch (error) {
-      throw new Error(`${path.relative(repoRoot, file)}: ${(error as Error).message}`);
-    }
-  }
-
-  // Every `.yaml` file under `dir`, keyed by its id: its path from `dir`
-  // without the extension.
-  function readById<In, Out>(dir: string, shape: (content: In) => Out): Record<string, Out | undefined> {
-    if (!fs.existsSync(dir)) return {};
-    const files = fs.readdirSync(dir, { recursive: true, encoding: "utf8" }).filter((file) => file.endsWith(".yaml"));
-    return Object.fromEntries(
-      files.sort().map((file) => [file.slice(0, -5).split(path.sep).join("/"), readYaml(path.join(dir, file), shape)]),
-    );
-  }
-}
-
 // Flow change data uses code Anchors from each commit's Knowledge base
 // version; edits to Flow and Part YAML files never count as code changes.
-
-// A Variant file holds only the Steps from where it diverges; the Steps it
-// shares with the main path are put back in front, so every path reads whole.
-function paths({ outcome, steps, qa, variants = [] }: FlowFile): Path[] {
-  return [
-    { id: "main", name: "Main path", outcome, steps, qa },
-    ...variants.map(({ diverges_at, steps: own, ...variant }) => {
-      const at = steps.findIndex((step) => step.id === diverges_at);
-      if (at === -1) return { ...variant, steps: own };
-      const shared = steps.slice(0, at).map((step) => ({ ...step, shared: true as const }));
-      return { ...variant, divergesAt: at, steps: [...shared, ...own] };
-    }),
-  ];
-}
