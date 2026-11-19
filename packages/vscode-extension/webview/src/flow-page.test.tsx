@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import type { Flow } from "./flow";
-import { FlowPage, type FlowActions } from "./flow-page";
+import { FlowPage } from "./flow-page";
+import { fakeFlowActions } from "./testing/fake-flow-actions";
 
 afterEach(cleanup);
 
@@ -81,19 +82,7 @@ const flow: Flow = {
 
 // Renders the page with every action recorded.
 function page(shown: Flow = flow) {
-  const actions: FlowActions = {
-    openFlow: vi.fn(),
-    openOverview: vi.fn(),
-    openFlowFile: vi.fn(),
-    openAnchor: vi.fn(),
-    askAbout: vi.fn(),
-    openLastChange: vi.fn(),
-    recordQaResult: vi.fn(),
-    noteQaResult: vi.fn(),
-    resetQaResults: vi.fn(),
-    askToFix: vi.fn(),
-    openTerminal: vi.fn(),
-  };
+  const actions = fakeFlowActions();
   return { ...render(<FlowPage flow={shown} actions={actions} />), actions };
 }
 

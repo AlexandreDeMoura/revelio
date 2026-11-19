@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import type { QaResult } from "../../src/messages";
 import type { Flow } from "./flow";
-import { FlowPage, type FlowActions } from "./flow-page";
+import { FlowPage } from "./flow-page";
+import { fakeFlowActions } from "./testing/fake-flow-actions";
 
 afterEach(cleanup);
 
@@ -50,19 +51,7 @@ const result = (state: QaResult["state"], note = ""): QaResult => ({ state, note
 
 // Renders the page with every action recorded, and the QA Results of the Flow by path.
 function page({ results = {}, recordable = true }: { results?: Record<string, Record<string, QaResult>>; recordable?: boolean } = {}) {
-  const actions: FlowActions = {
-    openFlow: vi.fn(),
-    openOverview: vi.fn(),
-    openFlowFile: vi.fn(),
-    openAnchor: vi.fn(),
-    askAbout: vi.fn(),
-    openLastChange: vi.fn(),
-    recordQaResult: vi.fn(),
-    noteQaResult: vi.fn(),
-    resetQaResults: vi.fn(),
-    askToFix: vi.fn(),
-    openTerminal: vi.fn(),
-  };
+  const actions = fakeFlowActions();
   return { ...render(<FlowPage flow={flow} actions={actions} results={results} recordable={recordable} />), actions };
 }
 
@@ -219,8 +208,7 @@ describe("Check by hand", () => {
   it("says no result can be recorded on a QA Step with no id", () => {
     const [main, variant] = flow.paths;
     const noId = { ...main, qa: { setup: [], steps: [{ do: "Look.", expect: "It is there." }] } };
-    const actions = { recordQaResult: vi.fn() } as unknown as FlowActions;
-    render(<FlowPage flow={{ ...flow, paths: [noId, variant!] }} actions={actions} results={{}} recordable />);
+    render(<FlowPage flow={{ ...flow, paths: [noId, variant!] }} actions={fakeFlowActions()} results={{}} recordable />);
     press("c");
     expect(screen.getByText("This QA Step has no id, so no result can be recorded on it.")).toBeTruthy();
     expect(screen.queryByRole("group", { name: "Result" })).toBeNull();
