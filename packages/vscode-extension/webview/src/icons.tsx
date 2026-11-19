@@ -98,3 +98,13 @@ export const Checklist = icon(
     <path d="M5.5 2V1h5v1M5.5 7.5l1.5 1.5 3-3M5.5 12h5" />
   </>,
 );
+export const ReadAgain = icon(
+  <>
+    <path d="M13 8a5 5 0 11-5-5h2.5" />
+    <path d="M9 1.5L10.5 3 9 4.5" />
+  </>,
+);
+// A written Flow, and a Flow to write: drawn dashed, as it is not there yet.
+export const FlowMark = icon(<circle cx="8" cy="8" r="4" />);
+export const ToWriteMark = icon(<circle cx="8" cy="8" r="4.5" strokeDasharray="2 2" />);
+export const ToWrite = icon(<circle cx="8" cy="8" r="5" strokeDasharray="2 2" />);

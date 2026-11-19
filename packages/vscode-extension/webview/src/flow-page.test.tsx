@@ -83,6 +83,7 @@ const flow: Flow = {
 function page(shown: Flow = flow) {
   const actions: FlowActions = {
     openFlow: vi.fn(),
+    openOverview: vi.fn(),
     openFlowFile: vi.fn(),
     openAnchor: vi.fn(),
     askAbout: vi.fn(),
@@ -105,6 +106,13 @@ const choosePath = (name: RegExp) => {
 };
 
 describe("FlowPage", () => {
+  it("opens the Overview from its button and from the app's name", () => {
+    const { actions } = page();
+    fireEvent.click(screen.getByRole("button", { name: "Overview" }));
+    fireEvent.click(screen.getByRole("button", { name: "pantry" }));
+    expect(actions.openOverview).toHaveBeenCalledTimes(2);
+  });
+
   it("names the Flow, where it sits in the app, and what it is for", () => {
     page();
     expect(screen.getByRole("heading", { level: 1, name: "Add an item to the list" })).toBeTruthy();

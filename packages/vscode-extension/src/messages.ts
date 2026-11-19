@@ -12,6 +12,9 @@ export type FlowChange = {
   last?: { sha: string; subject: string; date: string; files: string[] };
 };
 
+// The last commit of the branch, with the ids of the Flows it changed: none, often.
+export type LastCommit = { sha: string; subject: string; date: string; flows: string[] };
+
 // A QA Result, as the page shows it.
 export type QaState = "passed" | "failed" | "could-not-perform";
 export type QaResult = { state: QaState; note: string; date: string };
@@ -25,6 +28,8 @@ type QaStepRef = { flow: string; path: string; step: string };
 export type WebviewMessage =
   // The page has loaded and listens: the extension answers with the knowledge base, then its changes.
   | { type: "ready" }
+  // Reads the knowledge base again: the extension answers as it answers `ready`.
+  | { type: "readAgain" }
   // Opens beside the view the place in the code an Anchor's `at` names: `path#Symbol`, from the app's root.
   | { type: "openAnchor"; at: string }
   // Opens beside the view the file of the Flow with this id.
@@ -46,8 +51,9 @@ export type WebviewMessage =
 // From the extension to the webview.
 export type ExtensionMessage =
   | { type: "knowledgeBase"; knowledgeBase: KnowledgeBase }
-  // Sent after the knowledge base, since git takes longer. Null when git cannot say, outside a repo for one.
-  | { type: "changes"; flows: Record<string, FlowChange> | null }
+  // Sent after the knowledge base, since git takes longer. Null when git cannot say, outside a repo
+  // for one. No `lastCommit` when git cannot say, or the branch has no commit.
+  | { type: "changes"; flows: Record<string, FlowChange> | null; lastCommit?: LastCommit }
   // The Builder's QA Results. Null when they cannot be recorded: outside a git repo, or in one with no commit.
   | { type: "qaResults"; results: QaResults | null }
   // Why there is no knowledge base to show, in words for the Builder.

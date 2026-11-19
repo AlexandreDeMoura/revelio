@@ -4,8 +4,8 @@
 // The path picker and the Variant links show a Variant's Steps instead. Check by hand, which
 // the C key opens and the R key leaves, shows the Manual QA Check of the path chosen.
 //
-// The search, Overview, Changes and the breadcrumb menus do nothing yet: they wait for the
-// pages they open.
+// The app's name in the breadcrumb and the Overview button open the Overview. The search,
+// Changes and the breadcrumb menus do nothing yet: they wait for the pages they open.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { QaResult, QaState } from "../../src/messages";
 import { CheckByHand, tally } from "./check-by-hand";
@@ -22,14 +22,12 @@ import {
   Commit,
   File,
   Fork,
-  GitBranch,
-  Grid,
   Lock,
   OpenBeside,
-  Search,
 } from "./icons";
 import { InlineText, plural } from "./text";
 import type { FailedQaStep } from "./to-flow";
+import { Toolbar } from "./toolbar";
 
 type OpenPart = { step: number; part: string } | null;
 
@@ -39,6 +37,7 @@ export type FlowLink = { name: string; open: () => void };
 // What the page's buttons ask for. `at` is an Anchor's `path#Symbol`.
 export type FlowActions = {
   openFlow(id: string): void;
+  openOverview(): void;
   openFlowFile(): void;
   openAnchor(at: string): void;
   askAbout(part: Part): void;
@@ -88,7 +87,7 @@ export function FlowPage({
 
   return (
     <div className="flow-page">
-      <Toolbar flow={flow} previous={previous} next={next} />
+      <FlowToolbar flow={flow} previous={previous} next={next} onOverview={actions.openOverview} />
       <main className="flow">
         <Header flow={flow} actions={actions} />
         {tab === "read" && <About flow={flow} actions={actions} />}
@@ -330,60 +329,61 @@ function pathMeta(path: Path): string {
   return `${plural(path.steps.length, "Step")}${leaves}`;
 }
 
-function Toolbar({ flow, previous, next }: { flow: Flow; previous?: FlowLink; next?: FlowLink }) {
+function FlowToolbar({
+  flow,
+  previous,
+  next,
+  onOverview,
+}: {
+  flow: Flow;
+  previous?: FlowLink;
+  next?: FlowLink;
+  onOverview: () => void;
+}) {
   return (
-    <div className="toolbar">
-      <nav aria-label="Where you are" className="crumbs">
-        <button type="button" className="crumb">
-          <AppIcon />
-          {flow.app}
-        </button>
-        <ChevronRight size={14} className="crumb-sep" />
-        <button type="button" className="crumb">
-          {flow.area}
-          <ChevronDown size={14} />
-        </button>
-        <ChevronRight size={14} className="crumb-sep" />
-        <button type="button" className="crumb" aria-current="page">
-          {flow.name}
-          <ChevronDown size={14} />
-        </button>
-      </nav>
-      <div className="toolbar-actions">
-        <button type="button" className="icon-button" aria-label="Go to a Flow or Part">
-          <Search />
-        </button>
-        <button type="button" className="toolbar-link">
-          <Grid />
-          Overview
-        </button>
-        <button type="button" className="toolbar-link">
-          <GitBranch />
-          Changes
-        </button>
-        <span aria-hidden="true" className="toolbar-divider" />
-        <button
-          type="button"
-          className="icon-button"
-          aria-label={previous ? `Previous Flow: ${previous.name}` : "Previous Flow"}
-          title={previous?.name}
-          disabled={!previous}
-          onClick={previous?.open}
-        >
-          <ArrowLeft />
-        </button>
-        <button
-          type="button"
-          className="icon-button"
-          aria-label={next ? `Next Flow: ${next.name}` : "Next Flow"}
-          title={next?.name}
-          disabled={!next}
-          onClick={next?.open}
-        >
-          <ArrowRight />
-        </button>
-      </div>
-    </div>
+    <Toolbar
+      onOverview={onOverview}
+      crumbs={
+        <>
+          <button type="button" className="crumb" onClick={onOverview}>
+            <AppIcon />
+            {flow.app}
+          </button>
+          <ChevronRight size={14} className="crumb-sep" />
+          <button type="button" className="crumb">
+            {flow.area}
+            <ChevronDown size={14} />
+          </button>
+          <ChevronRight size={14} className="crumb-sep" />
+          <button type="button" className="crumb" aria-current="page">
+            {flow.name}
+            <ChevronDown size={14} />
+          </button>
+        </>
+      }
+    >
+      <span aria-hidden="true" className="toolbar-divider" />
+      <button
+        type="button"
+        className="icon-button"
+        aria-label={previous ? `Previous Flow: ${previous.name}` : "Previous Flow"}
+        title={previous?.name}
+        disabled={!previous}
+        onClick={previous?.open}
+      >
+        <ArrowLeft />
+      </button>
+      <button
+        type="button"
+        className="icon-button"
+        aria-label={next ? `Next Flow: ${next.name}` : "Next Flow"}
+        title={next?.name}
+        disabled={!next}
+        onClick={next?.open}
+      >
+        <ArrowRight />
+      </button>
+    </Toolbar>
   );
 }
 

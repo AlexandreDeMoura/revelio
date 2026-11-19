@@ -80,6 +80,7 @@ export class RevelioPanel {
     const root = appRoot();
     switch (message.type) {
       case "ready":
+      case "readAgain":
         return void this.send("knowledgeBase");
       case "openAnchor":
         return void (root && openAnchor(root, message.at));

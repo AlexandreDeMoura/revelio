@@ -52,6 +52,7 @@ const result = (state: QaResult["state"], note = ""): QaResult => ({ state, note
 function page({ results = {}, recordable = true }: { results?: Record<string, Record<string, QaResult>>; recordable?: boolean } = {}) {
   const actions: FlowActions = {
     openFlow: vi.fn(),
+    openOverview: vi.fn(),
     openFlowFile: vi.fn(),
     openAnchor: vi.fn(),
     askAbout: vi.fn(),

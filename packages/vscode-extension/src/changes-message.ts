@@ -1,4 +1,4 @@
-// What git says of each Flow, read by the same code as the web view's.
+// What git says of each Flow, and of the last commit of the branch, read by the same code as the web view's.
 import { changeReader } from "../../../src/flow-changes.js";
 import type { ExtensionMessage, FlowChange } from "./messages";
 
@@ -26,7 +26,12 @@ export async function changesMessage(
           }
         : { uncommitted };
     }
-    return { type: "changes", flows };
+    const last = reader.changes.recent[0];
+    return {
+      type: "changes",
+      flows,
+      ...(last && { lastCommit: { sha: last.sha, subject: last.subject, date: last.date, flows: last.flows } }),
+    };
   } catch {
     // Outside a git repo, or in one with no commit, git has nothing to say: the page shows the Flow without it.
     return { type: "changes", flows: null };

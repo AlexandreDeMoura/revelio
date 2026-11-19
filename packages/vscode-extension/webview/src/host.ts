@@ -5,9 +5,10 @@ export type Host = {
   post(message: WebviewMessage): void;
   // Calls `listener` with every message from the extension, until the returned function is called.
   onMessage(listener: (message: ExtensionMessage) => void): () => void;
-  // The Flow the view showed, kept by VS Code while the view is hidden or reloaded.
+  // The Flow the view showed, kept by VS Code while the view is hidden or reloaded. Undefined
+  // when it showed the Overview.
   savedFlow(): string | undefined;
-  saveFlow(id: string): void;
+  saveFlow(id: string | undefined): void;
 };
 
 type SavedState = { flow?: string };

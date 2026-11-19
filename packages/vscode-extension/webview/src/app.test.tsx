@@ -68,16 +68,65 @@ describe("App", () => {
     expect(screen.getByText("Reading the knowledge base…")).toBeTruthy();
   });
 
-  it("opens on the first Flow of the knowledge base it receives", () => {
-    const { host, send } = fakeHost();
+  it("opens on the Overview, and opens a Flow from it", () => {
+    const { host, send, kept } = fakeHost();
     render(<App host={host} />);
     send({ type: "knowledgeBase", knowledgeBase: twoFlows });
-    expect(heading()).toBe("Add an item");
-    expect(screen.getByText("The goal of Add an item.")).toBeTruthy();
+    expect(heading()).toBe("pantry");
+
+    fireEvent.click(screen.getByRole("button", { name: /Remove an item/ }));
+    expect(heading()).toBe("Remove an item");
+    expect(screen.getByText("The goal of Remove an item.")).toBeTruthy();
+    expect(kept.flow).toBe("remove-an-item");
+  });
+
+  it("goes back to the Overview from a Flow page, by its button or the app's name", () => {
+    const { host, send, kept } = fakeHost("add-an-item");
+    render(<App host={host} />);
+    send({ type: "knowledgeBase", knowledgeBase: twoFlows });
+
+    fireEvent.click(screen.getByRole("button", { name: "Overview" }));
+    expect(heading()).toBe("pantry");
+    expect(kept.flow).toBeUndefined();
+
+    fireEvent.click(screen.getByRole("button", { name: /Add an item/ }));
+    fireEvent.click(screen.getByRole("button", { name: "pantry" }));
+    expect(heading()).toBe("pantry");
+  });
+
+  it("shows the Overview when only Flows to write are named", () => {
+    const { host, send } = fakeHost();
+    const toWrite = kb({});
+    toWrite.areas.list!.flows_to_write = { share: { name: "Share the list", is: "Gives it to the household." } };
+    render(<App host={host} />);
+    send({ type: "knowledgeBase", knowledgeBase: toWrite });
+    expect(heading()).toBe("pantry");
+    expect(screen.getByText(/No Flow is written yet/)).toBeTruthy();
+  });
+
+  it("asks the extension to read the knowledge base again, to show a commit, and the agent to write the Flows to write", () => {
+    const { host, send, sent } = fakeHost();
+    const toWrite = kb({ "add-an-item": flow("Add an item", "list") });
+    toWrite.areas.list!.flows_to_write = { share: { name: "Share the list", is: "Gives it to the household." } };
+    render(<App host={host} />);
+    send({ type: "knowledgeBase", knowledgeBase: toWrite });
+    send({
+      type: "changes",
+      flows: {},
+      lastCommit: { sha: "e94d1c7a2b", subject: "chore: release", date: new Date().toISOString(), flows: ["add-an-item"] },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Read it again" }));
+    fireEvent.click(screen.getByRole("button", { name: "e94d1c7" }));
+    fireEvent.click(screen.getByRole("button", { name: "Write them with the agent" }));
+
+    expect(sent).toContainEqual({ type: "readAgain" });
+    expect(sent).toContainEqual({ type: "openCommit", sha: "e94d1c7a2b", files: [] });
+    expect(sent).toContainEqual({ type: "askAgent", prompt: "/map-the-app" });
   });
 
   it("moves to the next Flow and back", () => {
-    const { host, send } = fakeHost();
+    const { host, send } = fakeHost("add-an-item");
     render(<App host={host} />);
     send({ type: "knowledgeBase", knowledgeBase: twoFlows });
 
@@ -90,7 +139,7 @@ describe("App", () => {
   });
 
   it("stays on its Flow when the knowledge base is sent again, and shows what changed", () => {
-    const { host, send } = fakeHost();
+    const { host, send } = fakeHost("add-an-item");
     render(<App host={host} />);
     send({ type: "knowledgeBase", knowledgeBase: twoFlows });
     fireEvent.click(screen.getByRole("button", { name: "Next Flow: Remove an item" }));
@@ -102,32 +151,32 @@ describe("App", () => {
     expect(heading()).toBe("Take an item off");
   });
 
-  it("goes back to the first Flow when its Flow is gone", () => {
-    const { host, send } = fakeHost();
+  it("goes back to the Overview when its Flow is gone", () => {
+    const { host, send } = fakeHost("add-an-item");
     render(<App host={host} />);
     send({ type: "knowledgeBase", knowledgeBase: twoFlows });
     fireEvent.click(screen.getByRole("button", { name: "Next Flow: Remove an item" }));
 
     send({ type: "knowledgeBase", knowledgeBase: kb({ "add-an-item": flow("Add an item", "list") }) });
-    expect(heading()).toBe("Add an item");
+    expect(heading()).toBe("pantry");
   });
 
   it("says so when no Flow is written yet", () => {
-    const { host, send } = fakeHost();
+    const { host, send } = fakeHost("add-an-item");
     render(<App host={host} />);
     send({ type: "knowledgeBase", knowledgeBase: kb({}) });
     expect(screen.getByText("No Flow is written yet.")).toBeTruthy();
   });
 
   it("shows why there is no knowledge base", () => {
-    const { host, send } = fakeHost();
+    const { host, send } = fakeHost("add-an-item");
     render(<App host={host} />);
     send({ type: "error", message: "knowledge-base/flows/broken.yaml: bad indentation" });
     expect(screen.getByText("knowledge-base/flows/broken.yaml: bad indentation")).toBeTruthy();
   });
 
   it("shows what git says of the Flow once the extension sends it", () => {
-    const { host, send } = fakeHost();
+    const { host, send } = fakeHost("add-an-item");
     render(<App host={host} />);
     send({ type: "knowledgeBase", knowledgeBase: twoFlows });
     expect(screen.queryByText(/Last changed in/)).toBeNull();
@@ -140,7 +189,7 @@ describe("App", () => {
   });
 
   it("asks the extension to open the Flow file, a place in the code, and the agent", () => {
-    const { host, send, sent } = fakeHost();
+    const { host, send, sent } = fakeHost("add-an-item");
     render(<App host={host} />);
     send({ type: "knowledgeBase", knowledgeBase: twoFlows });
 
@@ -155,7 +204,7 @@ describe("App", () => {
   });
 
   it("asks the extension to show what the commit that last changed the Flow changed in its files", () => {
-    const { host, send, sent } = fakeHost();
+    const { host, send, sent } = fakeHost("add-an-item");
     render(<App host={host} />);
     send({ type: "knowledgeBase", knowledgeBase: twoFlows });
     send({
@@ -169,7 +218,7 @@ describe("App", () => {
   });
 
   it("opens the Flow a precondition names", () => {
-    const { host, send } = fakeHost();
+    const { host, send } = fakeHost("add-an-item");
     render(<App host={host} />);
     send({
       type: "knowledgeBase",
@@ -193,7 +242,7 @@ describe("App", () => {
   });
 
   it("shows the QA Results the extension sends, and records the one picked at once", () => {
-    const { host, send, sent } = fakeHost();
+    const { host, send, sent } = fakeHost("add-an-item");
     const checked = kb({ "add-an-item": flow("Add an item", "list", { paths: [{ ...withQa, qa: twoQaSteps }] }) });
     render(<App host={host} />);
     send({ type: "knowledgeBase", knowledgeBase: checked });
@@ -210,7 +259,7 @@ describe("App", () => {
   });
 
   it("asks the extension to save a note, start the path over, open a terminal, and the agent to fix a failed QA Step", () => {
-    const { host, send, sent } = fakeHost();
+    const { host, send, sent } = fakeHost("add-an-item");
     const checked = kb({ "add-an-item": flow("Add an item", "list", { paths: [{ ...withQa, qa: twoQaSteps }] }) });
     render(<App host={host} />);
     send({ type: "knowledgeBase", knowledgeBase: checked });
@@ -233,7 +282,7 @@ describe("App", () => {
   });
 
   it("says results cannot be recorded when the extension says so", () => {
-    const { host, send } = fakeHost();
+    const { host, send } = fakeHost("add-an-item");
     render(<App host={host} />);
     send({ type: "knowledgeBase", knowledgeBase: twoFlows });
     send({ type: "qaResults", results: null });
@@ -242,7 +291,7 @@ describe("App", () => {
   });
 
   it("stays on the Variant it shows when the knowledge base is sent again", () => {
-    const { host, send } = fakeHost();
+    const { host, send } = fakeHost("add-an-item");
     const withVariant = () =>
       kb({
         "add-an-item": flow("Add an item", "list", {

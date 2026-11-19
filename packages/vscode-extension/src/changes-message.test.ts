@@ -65,9 +65,33 @@ describe("changesMessage", () => {
     expect(Object.keys(message.flows?.[flowId]?.last ?? {}).sort()).toEqual(["date", "files", "sha", "subject"]);
   });
 
+  it("sends the last commit of the branch, with the Flows it changed", async () => {
+    const root = app();
+    commitAll(root, "first");
+    changeTheCode(root);
+    const second = commitAll(root, "Make the tool step return one");
+
+    const message = await changesMessage(root, home());
+
+    expect(message.lastCommit).toMatchObject({ sha: second, subject: "Make the tool step return one", flows: [flowId] });
+    expect(Date.parse(message.lastCommit?.date ?? "")).not.toBeNaN();
+  });
+
+  it("sends the last commit of the branch when it changed no Flow", async () => {
+    const root = app();
+    commitAll(root, "first");
+    fs.writeFileSync(path.join(root, "README.md"), "Another file\n");
+    const second = commitAll(root, "chore: release 1.4.0");
+
+    const message = await changesMessage(root, home());
+
+    expect(message.lastCommit).toMatchObject({ sha: second, subject: "chore: release 1.4.0", flows: [] });
+  });
+
   it("sends no commit and no change outside a git repo", async () => {
     const message = await changesMessage(app(), home());
     expect(message.flows?.[flowId] ?? { uncommitted: false }).toEqual({ uncommitted: false });
+    expect(message.lastCommit).toBeUndefined();
   });
 
   it("sends no changes with no folder open", async () => {

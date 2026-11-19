@@ -1,25 +1,33 @@
-import { useEffect, useState } from "react";
-import type { FlowChange, KnowledgeBase, QaResult, QaResults } from "../../src/messages";
+import { useEffect, useLayoutEffect, useState } from "react";
+import type { FlowChange, KnowledgeBase, LastCommit, QaResult, QaResults } from "../../src/messages";
 import { FlowPage, type FlowActions, type FlowLink } from "./flow-page";
 import type { Host } from "./host";
+import { OverviewPage } from "./overview-page";
 import { askPrompt, fixPrompt, flowOrder, toFlow } from "./to-flow";
+import { toOverview, writePrompt } from "./to-overview";
 
-type Received = { knowledgeBase: KnowledgeBase } | { error: string } | undefined;
+// The knowledge base, with when it was received, in ms.
+type Received = { knowledgeBase: KnowledgeBase; at: number } | { error: string } | undefined;
 
-// The Revelio view: the Flow page of one Flow of the knowledge base the extension sends,
-// shown again each time the extension sends it. A QA Result the Builder records shows at once,
-// before the extension sends the QA Results again.
+// The Revelio view: the Overview of the knowledge base the extension sends, or the Flow page of
+// one of its Flows, shown again each time the extension sends it. A QA Result the Builder
+// records shows at once, before the extension sends the QA Results again.
 export function App({ host }: { host: Host }) {
   const [received, setReceived] = useState<Received>();
   const [changes, setChanges] = useState<Record<string, FlowChange> | null>();
+  const [lastCommit, setLastCommit] = useState<LastCommit>();
+  // The Flow shown, or undefined for the Overview.
   const [chosen, setChosen] = useState<string | undefined>(() => host.savedFlow());
   // Null when results cannot be recorded; undefined until the extension has sent them.
   const [qaResults, setQaResults] = useState<QaResults | null>();
 
   useEffect(() => {
     const stop = host.onMessage((message) => {
-      if (message.type === "knowledgeBase") setReceived({ knowledgeBase: message.knowledgeBase });
-      else if (message.type === "changes") setChanges(message.flows);
+      if (message.type === "knowledgeBase") setReceived({ knowledgeBase: message.knowledgeBase, at: Date.now() });
+      else if (message.type === "changes") {
+        setChanges(message.flows);
+        setLastCommit(message.lastCommit);
+      }
       else if (message.type === "qaResults") setQaResults(message.results);
       else setReceived({ error: message.message });
     });
@@ -27,25 +35,48 @@ export function App({ host }: { host: Host }) {
     return stop;
   }, [host]);
 
+  const order = received && "knowledgeBase" in received ? flowOrder(received.knowledgeBase) : [];
+  // The Flow chosen, while the knowledge base still has it, else the Overview.
+  const shown = chosen !== undefined && order.includes(chosen) ? chosen : undefined;
+  // A page opens at its top.
+  useLayoutEffect(() => {
+    document.documentElement.scrollTop = 0;
+  }, [shown]);
+
   if (!received) return <Notice>Reading the knowledge base…</Notice>;
   if ("error" in received) return <Notice>{received.error}</Notice>;
 
   const kb = received.knowledgeBase;
-  const order = flowOrder(kb);
-  // The Flow chosen, while the knowledge base still has it, else the first.
-  const id = chosen !== undefined && order.includes(chosen) ? chosen : order[0];
-  const flow = id === undefined ? undefined : toFlow(kb, id, changes);
-  if (id === undefined || !flow) return <Notice>No Flow is written yet.</Notice>;
-
-  const openFlow = (other: string) => {
+  const show = (other: string | undefined) => {
     setChosen(other);
     host.saveFlow(other);
   };
+  const openFlow = (other: string) => show(other);
+  const flow = shown === undefined ? undefined : toFlow(kb, shown, changes);
+
+  if (!flow) {
+    const overview = toOverview(kb, changes, lastCommit);
+    if (overview.written === 0 && overview.toWrite === 0) return <Notice>No Flow is written yet.</Notice>;
+    return (
+      <OverviewPage
+        overview={overview}
+        readAt={received.at}
+        actions={{
+          openFlow,
+          openCommit: (sha) => host.post({ type: "openCommit", sha, files: [] }),
+          readAgain: () => host.post({ type: "readAgain" }),
+          askToWrite: (flowToWrite) => host.post({ type: "askAgent", prompt: writePrompt(flowToWrite) }),
+        }}
+      />
+    );
+  }
+  const id = flow.id;
   const at = order.indexOf(id);
   const link = (other: string | undefined): FlowLink | undefined =>
     other === undefined ? undefined : { name: kb.flows[other]?.name ?? other, open: () => openFlow(other) };
   const actions: FlowActions = {
     openFlow,
+    openOverview: () => show(undefined),
     openFlowFile: () => host.post({ type: "openFlowFile", flow: id }),
     openAnchor: (anchor) => host.post({ type: "openAnchor", at: anchor }),
     askAbout: (part) => host.post({ type: "askAgent", prompt: askPrompt(flow, part) }),
