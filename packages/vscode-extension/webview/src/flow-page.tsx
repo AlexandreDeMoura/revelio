@@ -1,11 +1,14 @@
 // The Flow page: what a Flow is for, who carries it out, and its main path Step by Step,
 // each Step's Parts opening onto where they live in the code.
 //
-// The path picker and the Variant links show a Variant's Steps instead.
+// The path picker and the Variant links show a Variant's Steps instead. Check by hand, which
+// the C key opens and the R key leaves, shows the Manual QA Check of the path chosen.
 //
 // The search, Overview, Changes and the breadcrumb menus do nothing yet: they wait for the
 // pages they open.
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { QaResult, QaState } from "../../src/messages";
+import { CheckByHand, tally } from "./check-by-hand";
 import type { Anchor, Flow, Part, Path, Step } from "./flow";
 import {
   AppIcon,
@@ -21,9 +24,12 @@ import {
   Fork,
   GitBranch,
   Grid,
+  Lock,
   OpenBeside,
   Search,
 } from "./icons";
+import { InlineText, plural } from "./text";
+import type { FailedQaStep } from "./to-flow";
 
 type OpenPart = { step: number; part: string } | null;
 
@@ -38,21 +44,37 @@ export type FlowActions = {
   askAbout(part: Part): void;
   // Shows what the commit that last changed the Flow changed.
   openLastChange(): void;
+  recordQaResult(path: string, step: string, state: QaState, note: string): void;
+  noteQaResult(path: string, step: string, note: string): void;
+  // Sets every QA Step of the path back to not checked.
+  resetQaResults(path: string): void;
+  askToFix(path: Path, failed: FailedQaStep[]): void;
+  openTerminal(): void;
 };
+
+type Tab = "read" | "check";
 
 export function FlowPage({
   flow,
   actions,
   previous,
   next,
+  results = {},
+  recordable = true,
 }: {
   flow: Flow;
   actions: FlowActions;
   previous?: FlowLink;
   next?: FlowLink;
+  // The Builder's QA Results on the Flow, by path id, then QA Step id.
+  results?: Record<string, Record<string, QaResult>>;
+  // False when results cannot be recorded: outside a git repo, or in one with no commit.
+  recordable?: boolean;
 }) {
   const [open, setOpen] = useState<OpenPart>(null);
   const [pathId, setPathId] = useState("main");
+  const [tab, setTab] = useState<Tab>("read");
+  useTabKeys(setTab);
   const toggle = (step: number, part: string) =>
     setOpen((current) => (current?.step === step && current.part === part ? null : { step, part }));
   // The path chosen, while the Flow still has it, else the main path.
@@ -61,62 +83,153 @@ export function FlowPage({
     setPathId(id);
     setOpen(null);
   };
+  const onPath = (of: Path) => results[of.id] ?? {};
+  const checked = tally(path, onPath(path));
 
   return (
     <div className="flow-page">
       <Toolbar flow={flow} previous={previous} next={next} />
       <main className="flow">
         <Header flow={flow} actions={actions} />
-        <About flow={flow} actions={actions} />
+        {tab === "read" && <About flow={flow} actions={actions} />}
 
         <div role="tablist" aria-label="How to use this Flow" className="tabs">
-          <button type="button" role="tab" id="tab-read" aria-selected="true" aria-controls="panel-read" className="tab">
+          <button
+            type="button"
+            role="tab"
+            id="tab-read"
+            aria-selected={tab === "read"}
+            aria-controls="panel"
+            className="tab"
+            onClick={() => setTab("read")}
+          >
             Read the Flow <kbd>R</kbd>
           </button>
-          <button type="button" role="tab" aria-selected="false" disabled className="tab">
+          <button
+            type="button"
+            role="tab"
+            id="tab-check"
+            aria-selected={tab === "check"}
+            aria-controls="panel"
+            className="tab"
+            onClick={() => setTab("check")}
+          >
             Check by hand <kbd>C</kbd>
           </button>
-          <span className="tabs-meta">{pathMeta(path)}</span>
+          <span className="tabs-meta">
+            {tab === "read" ? pathMeta(path) : `${checked.passed} of ${plural(path.qa.steps.length, "QA Step")} passed`}
+          </span>
         </div>
 
-        <div role="tabpanel" id="panel-read" aria-labelledby="tab-read">
+        <div role="tabpanel" id="panel" aria-labelledby={tab === "read" ? "tab-read" : "tab-check"}>
           <div className="path-bar">
             <PathPicker paths={flow.paths} shown={path} onChoose={choosePath} />
+            {tab === "check" && (
+              <span className="results-stay">
+                <Lock size={14} />
+                Results stay on this machine, outside the repo
+              </span>
+            )}
           </div>
 
-          {path.id !== "main" && path.divergesAt === undefined && (
-            <p className="variant-banner">
-              <span className="banner-label">Variant</span>
-              <span>{path.when}</span>
-              <span className="uncommitted">It leaves at a Step the main path does not have.</span>
-            </p>
+          {tab === "check" ? (
+            <CheckByHand
+              key={path.id}
+              path={path}
+              results={onPath(path)}
+              recordable={recordable}
+              next={nextPath(flow.paths, path, (of) => tally(of, onPath(of)).left)}
+              onChoosePath={choosePath}
+              actions={{
+                record: (step, state, note) => actions.recordQaResult(path.id, step, state, note),
+                note: (step, note) => actions.noteQaResult(path.id, step, note),
+                reset: () => actions.resetQaResults(path.id),
+                askToFix: (failed) => actions.askToFix(path, failed),
+                openTerminal: actions.openTerminal,
+              }}
+            />
+          ) : (
+            <ReadTheFlow flow={flow} path={path} open={open} onToggle={toggle} onChoosePath={choosePath} actions={actions} />
           )}
-
-          <ol aria-label="Steps" className="steps">
-            {path.steps.map((step, i) => (
-              <StepRow
-                key={`${path.id}-${i}`}
-                flow={flow}
-                path={path}
-                step={step}
-                index={i}
-                openPart={open?.step === i ? open.part : null}
-                onToggle={(part) => toggle(i, part)}
-                onChoosePath={choosePath}
-                actions={actions}
-              />
-            ))}
-          </ol>
-
-          <div className="line outcome">
-            <span className="line-label">Outcome</span>
-            <p>
-              <InlineText text={path.outcome} />
-            </p>
-          </div>
         </div>
       </main>
     </div>
+  );
+}
+
+// R reads the Flow and C checks it by hand, unless a note is being typed or a modifier is held.
+function useTabKeys(setTab: (tab: Tab) => void) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey || event.defaultPrevented) return;
+      if ((event.target as Element | null)?.closest?.("input, textarea, select, [contenteditable]")) return;
+      const key = event.key.toLowerCase();
+      if (key === "r") setTab("read");
+      else if (key === "c") setTab("check");
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [setTab]);
+}
+
+// The path to check after this one: the next one with no QA Step checked, else the next one with
+// a QA Step not checked. `left` counts a path's QA Steps not checked.
+function nextPath(paths: Path[], path: Path, left: (path: Path) => number): Path | undefined {
+  const at = paths.indexOf(path);
+  const after = [...paths.slice(at + 1), ...paths.slice(0, at)].filter((other) => other.qa.steps.length > 0);
+  return after.find((other) => left(other) === other.qa.steps.length) ?? after.find((other) => left(other) > 0);
+}
+
+// The Steps of the path chosen, with its outcome.
+function ReadTheFlow({
+  flow,
+  path,
+  open,
+  onToggle,
+  onChoosePath,
+  actions,
+}: {
+  flow: Flow;
+  path: Path;
+  open: OpenPart;
+  onToggle: (step: number, part: string) => void;
+  onChoosePath: (id: string) => void;
+  actions: FlowActions;
+}) {
+  return (
+    <>
+
+      {path.id !== "main" && path.divergesAt === undefined && (
+        <p className="variant-banner">
+          <span className="banner-label">Variant</span>
+          <span>{path.when}</span>
+          <span className="uncommitted">It leaves at a Step the main path does not have.</span>
+        </p>
+      )}
+
+      <ol aria-label="Steps" className="steps">
+        {path.steps.map((step, i) => (
+          <StepRow
+            key={`${path.id}-${i}`}
+            flow={flow}
+            path={path}
+            step={step}
+            index={i}
+            openPart={open?.step === i ? open.part : null}
+            onToggle={(part) => onToggle(i, part)}
+            onChoosePath={onChoosePath}
+            actions={actions}
+          />
+        ))}
+      </ol>
+
+      <div className="line outcome">
+        <span className="line-label">Outcome</span>
+        <p>
+          <InlineText text={path.outcome} />
+        </p>
+      </div>
+    </>
   );
 }
 
@@ -502,13 +615,4 @@ function AnchorRow({ anchor, onOpen }: { anchor: Anchor; onOpen: () => void }) {
       <OpenBeside className="muted" />
     </button>
   );
-}
-
-// Text with code, an address or a label on screen marked between backticks.
-function InlineText({ text }: { text: string }) {
-  return text.split("`").map((piece, i) => (i % 2 === 1 ? <code key={i}>{piece}</code> : piece));
-}
-
-function plural(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? "" : "s"}`;
 }

@@ -1,6 +1,6 @@
 // Turns the knowledge base the extension sends into the Flows the Flow page shows.
 import type { FlowChange, KnowledgeBase } from "../../src/messages";
-import type { Flow, Part, Path, Precondition, Step } from "./flow";
+import type { Flow, Part, Path, Precondition, QaStep, Step } from "./flow";
 
 type Read = KnowledgeBase["flows"][string] & {};
 type ReadPrecondition = NonNullable<Read["preconditions"]>[number];
@@ -16,7 +16,7 @@ export function toFlow(
 ): Flow | undefined {
   const flow = kb.flows[id];
   if (!flow) return undefined;
-  const [main = { id: "main", name: "Main path", outcome: "", steps: [] }, ...variants] = flow.paths;
+  const [main = { id: "main", name: "Main path", outcome: "", steps: [], qa: { setup: [], steps: [] } }, ...variants] = flow.paths;
   const paths: Flow["paths"] = [toPath(main), ...variants.map(toPath)];
   const actor = kb.actors[flow.actor];
   const change = changes?.[id];
@@ -39,7 +39,7 @@ export function toFlow(
   };
 }
 
-function toPath({ id, name, outcome, when, divergesAt, steps }: Omit<ReadPath, "qa">): Path {
+function toPath({ id, name, outcome, when, divergesAt, steps, qa }: ReadPath): Path {
   return {
     id,
     name,
@@ -47,6 +47,8 @@ function toPath({ id, name, outcome, when, divergesAt, steps }: Omit<ReadPath, "
     ...(when !== undefined && { when }),
     ...(divergesAt !== undefined && { divergesAt }),
     steps: steps.map(toStep),
+    // A file that breaks the rules may have no Manual QA Check: the page then has nothing to check.
+    qa: { setup: qa?.setup ?? [], steps: qa?.steps ?? [] },
   };
 }
 
@@ -76,6 +78,23 @@ export function askPrompt(flow: Flow, part: Part): string {
   return `About the Part "${part.name}" in the Flow "${flow.name}" of the Revelio knowledge base: ${part.is}${where}\n\n`;
 }
 
+// A failed QA Step, as the Builder recorded it.
+export type FailedQaStep = Pick<QaStep, "do" | "expect"> & { note: string };
+
+// A request to the agent to fix the QA Steps that failed on a path: what the Builder did,
+// expected and saw on each. The Builder reads it before they send it.
+export function fixPrompt(flow: Flow, path: Path, failed: FailedQaStep[]): string {
+  const onPath = path.id === "main" ? "the main path" : `the Variant "${path.name}"`;
+  const which = failed.length === 1 ? "a QA Step" : `${failed.length} QA Steps`;
+  const one = (step: FailedQaStep, number: string, indent: string) =>
+    [`${number}I did: ${step.do}`, `${indent}I expected: ${step.expect}`, ...(step.note ? [`${indent}I saw: ${step.note}`] : [])].join("\n");
+  const steps = failed.length === 1 ? one(failed[0]!, "", "") : failed.map((step, i) => one(step, `${i + 1}. `, "   ")).join("\n\n");
+  return (
+    `In the Flow "${flow.name}" of the Revelio knowledge base, ${which} of the Manual QA Check of ${onPath} failed.\n\n` +
+    `${steps}\n\nFind why, and fix ${failed.length === 1 ? "it" : "them"}.`
+  );
+}
+
 function precondition(kb: KnowledgeBase, pre: ReadPrecondition): Precondition {
   if (typeof pre === "string") return { text: pre };
   if ("flow" in pre) {
@@ -99,7 +118,7 @@ function partsNamed(kb: KnowledgeBase, ids: string[]): Record<string, Part> {
 }
 
 // How long ago `date` was, in the words of the web view.
-function ago(date: string, now: number): string {
+export function ago(date: string, now: number): string {
   const minutes = Math.round((now - Date.parse(date)) / 60000);
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${plural(minutes, "minute")} ago`;

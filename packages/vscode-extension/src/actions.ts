@@ -1,5 +1,5 @@
 // What the buttons of the Revelio view do in VS Code: open a place in the code or a Flow file
-// beside the view, show what a commit changed, and hand the agent a question.
+// beside the view, show what a commit changed, open a terminal, and hand the agent a question.
 import nodePath from "node:path";
 import * as vscode from "vscode";
 import { anchorTarget, definitionOffset } from "./anchor-target";
@@ -81,6 +81,11 @@ async function focusBeside(): Promise<void> {
   if (vscode.window.tabGroups.activeTabGroup === from) {
     await vscode.commands.executeCommand("workbench.action.newGroupRight");
   }
+}
+
+// Opens a terminal in the app's folder, or in VS Code's own folder when none is open.
+export function openTerminal(appRoot: string | undefined): void {
+  vscode.window.createTerminal({ name: "Revelio", ...(appRoot && { cwd: appRoot }) }).show();
 }
 
 const claudeCode = "anthropic.claude-code";

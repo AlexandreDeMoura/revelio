@@ -2,7 +2,7 @@
   "name": "revelio",
   "displayName": "Revelio AI",
   "description": "Understand the app your agent built, without reading its code: Revelio's map of your app, inside VS Code.",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "revelio-ai",
   "private": true,
   "license": "MIT",

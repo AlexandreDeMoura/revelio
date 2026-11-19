@@ -6,6 +6,8 @@ import { FlowPage, type FlowActions } from "./flow-page";
 
 afterEach(cleanup);
 
+const qa = { setup: [], steps: [] };
+
 const flow: Flow = {
   id: "add-an-item",
   app: "pantry",
@@ -34,6 +36,7 @@ const flow: Flow = {
       id: "main",
       name: "Main path",
       outcome: "The item is on the list for everyone.",
+      qa,
       steps: [
         { does: "Types an item.", sees: "The item appears.", system: "Saves the item.", parts: ["box", "sync"] },
         { does: "Opens the list on a second phone.", system: "Sends the list.", parts: ["sync"] },
@@ -45,6 +48,7 @@ const flow: Flow = {
       name: "The item is already on the list",
       when: "The Cook types an item the list has.",
       outcome: "The list keeps one of it.",
+      qa,
       divergesAt: 0,
       steps: [{ sees: "A warning says it is there.", parts: ["box"] }],
     },
@@ -53,6 +57,7 @@ const flow: Flow = {
       name: "The phone is offline",
       when: "The second phone has no network.",
       outcome: "The phone shows the list it last had.",
+      qa,
       divergesAt: 1,
       steps: [
         { does: "Types an item.", sees: "The item appears.", system: "Saves the item.", parts: ["box", "sync"], shared: true },
@@ -64,6 +69,7 @@ const flow: Flow = {
       name: "The list cannot be loaded",
       when: "The server does not answer.",
       outcome: "The phone says the list cannot be loaded.",
+      qa,
       divergesAt: 1,
       steps: [
         { does: "Types an item.", sees: "The item appears.", system: "Saves the item.", parts: ["box", "sync"], shared: true },
@@ -81,6 +87,11 @@ function page(shown: Flow = flow) {
     openAnchor: vi.fn(),
     askAbout: vi.fn(),
     openLastChange: vi.fn(),
+    recordQaResult: vi.fn(),
+    noteQaResult: vi.fn(),
+    resetQaResults: vi.fn(),
+    askToFix: vi.fn(),
+    openTerminal: vi.fn(),
   };
   return { ...render(<FlowPage flow={shown} actions={actions} />), actions };
 }
@@ -276,7 +287,7 @@ describe("FlowPage", () => {
   });
 
   it("says so when a Variant leaves at a Step the main path does not have", () => {
-    const lost = { id: "lost", name: "Lost its Step", when: "Someone removed that Step.", outcome: "Unknown.", steps: [{ does: "Its own.", parts: [] }] };
+    const lost = { id: "lost", name: "Lost its Step", when: "Someone removed that Step.", outcome: "Unknown.", qa, steps: [{ does: "Its own.", parts: [] }] };
     page({ ...flow, paths: [...flow.paths, lost] });
     choosePath(/Lost its Step/);
     expect(screen.getByText("It leaves at a Step the main path does not have.")).toBeTruthy();

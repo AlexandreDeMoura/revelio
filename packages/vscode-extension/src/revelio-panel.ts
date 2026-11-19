@@ -1,10 +1,11 @@
 import os from "node:os";
 import path from "node:path";
 import * as vscode from "vscode";
-import { askAgent, openAnchor, openCommit, openFlowFile } from "./actions";
+import { askAgent, openAnchor, openCommit, openFlowFile, openTerminal } from "./actions";
 import { changesMessage } from "./changes-message";
 import { knowledgeBaseMessage } from "./knowledge-base-message";
-import type { ExtensionMessage, WebviewMessage } from "./messages";
+import type { ExtensionMessage, FlowChange, WebviewMessage } from "./messages";
+import { changeQaResults, qaResultsMessage, type QaChange } from "./qa-results-message";
 import { anchoredFiles, refreshFor, refresher, type Refresh } from "./refresh";
 import { newNonce, webviewHtml } from "./webview-html";
 
@@ -41,6 +42,8 @@ export class RevelioPanel {
   private anchored = new Set<string>();
   // Counts the sends, so changes read for an older one are not sent after a newer one's.
   private sends = 0;
+  // What git said of each Flow last, which a QA Result records as it is recorded.
+  private flowChanges: Record<string, FlowChange> | null = null;
 
   private constructor(
     private readonly panel: vscode.WebviewPanel,
@@ -82,11 +85,37 @@ export class RevelioPanel {
         return void askAgent(message.prompt);
       case "openCommit":
         return void (root && openCommit(root, message.sha, message.files));
+      case "openTerminal":
+        return openTerminal(root);
+      case "recordQaResult":
+      case "noteQaResult":
+      case "resetQaResults":
+        return void (root && this.changeQaResults(root, message));
     }
   }
 
-  // The knowledge base first, unless only what git says is asked for, then what git says of
-  // its Flows, which takes longer.
+  // Writes the change, then sends the QA Results again: the page shows what the file holds.
+  private changeQaResults(root: string, change: QaChange): void {
+    let refused: string | undefined;
+    try {
+      refused = changeQaResults(root, os.homedir(), change, this.flowChanges?.[change.flow]?.uncommitted ?? false);
+    } catch (error) {
+      refused = (error as Error).message;
+    }
+    if (refused) void vscode.window.showErrorMessage(`Revelio did not record the QA Result: ${refused}`);
+    this.postQaResults(root);
+  }
+
+  private postQaResults(root: string | undefined): void {
+    try {
+      this.post(qaResultsMessage(root, os.homedir()));
+    } catch (error) {
+      void vscode.window.showErrorMessage(`Revelio cannot read your QA Results: ${(error as Error).message}`);
+    }
+  }
+
+  // The knowledge base and the QA Results first, unless only what git says is asked for, then
+  // what git says of its Flows, which takes longer.
   private async send(what: Refresh): Promise<void> {
     const send = ++this.sends;
     const root = appRoot();
@@ -94,9 +123,12 @@ export class RevelioPanel {
       const message = knowledgeBaseMessage(root);
       this.anchored = message.type === "knowledgeBase" ? anchoredFiles(message.knowledgeBase) : new Set();
       this.post(message);
+      this.postQaResults(root);
     }
     const changes = await changesMessage(root, os.homedir());
-    if (send === this.sends) this.post(changes);
+    if (send !== this.sends) return;
+    this.flowChanges = changes.flows;
+    this.post(changes);
   }
 
   // Sends the knowledge base again when a file of it is written, added or removed, so what an

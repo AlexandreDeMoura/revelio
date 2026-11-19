@@ -72,3 +72,29 @@ export const Fork = icon(<path d="M5 2.5v11M11 2.5v2a3 3 0 01-3 3H5" />);
 export const Chat = icon(<path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" />);
 export const OpenBeside = icon(<path d="M9 2.5h4.5V7M13.5 2.5L7.5 8.5M12 9.5v4H2.5V4h4" />);
 export const Check = icon(<path d="M3 8.5l3 3 7-7" />);
+export const Cross = icon(<path d="M4.5 4.5l7 7M11.5 4.5l-7 7" />);
+export const Dash = icon(<path d="M4.5 8h7" />);
+export const Lock = icon(
+  <>
+    <rect x="3.5" y="7" width="9" height="6.5" rx="1.5" />
+    <path d="M5.5 7V5a2.5 2.5 0 015 0v2" />
+  </>,
+);
+export const StartOver = icon(
+  <>
+    <path d="M3 8a5 5 0 105-5H5.5" />
+    <path d="M7 1.5L5.5 3 7 4.5" />
+  </>,
+);
+export const Terminal = icon(
+  <>
+    <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
+    <path d="M4.5 6.5l2 1.5-2 1.5M8.5 10h3" />
+  </>,
+);
+export const Checklist = icon(
+  <>
+    <rect x="2.5" y="2" width="11" height="12.5" rx="1.5" />
+    <path d="M5.5 2V1h5v1M5.5 7.5l1.5 1.5 3-3M5.5 12h5" />
+  </>,
+);

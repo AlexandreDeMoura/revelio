@@ -27,6 +27,13 @@ export type Step = {
   shared?: true;
 };
 
+// One action of a Manual QA Check, with the result the Builder should observe. A QA Step with
+// no id can have no QA Result.
+export type QaStep = { id?: string; do: string; expect: string };
+
+// The script the Builder follows by hand to check one path: the setup, then the QA Steps.
+export type ManualQaCheck = { setup: string[]; steps: QaStep[] };
+
 // One way through the Flow, start to end: the main path or a Variant.
 export type Path = {
   // `main` for the main path, else the Variant's id.
@@ -41,6 +48,7 @@ export type Path = {
   divergesAt?: number;
   // A Variant's Steps start with those it shares with the main path.
   steps: Step[];
+  qa: ManualQaCheck;
 };
 
 export type Precondition = {

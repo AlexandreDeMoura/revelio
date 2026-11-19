@@ -48,6 +48,15 @@ const kb = (flows: KnowledgeBase["flows"]): KnowledgeBase => ({
   },
 });
 
+const withQa = { id: "main", name: "Main path", outcome: "Done.", qa, steps: [{ id: "one", does: "Starts it." }] };
+const twoQaSteps = {
+  setup: [],
+  steps: [
+    { id: "open", do: "Open the list.", expect: "It opens." },
+    { id: "close", do: "Close the list.", expect: "It closes." },
+  ],
+};
+
 const twoFlows = kb({ "add-an-item": flow("Add an item", "list"), "remove-an-item": flow("Remove an item", "list") });
 const heading = () => screen.getByRole("heading", { level: 1 }).textContent;
 
@@ -181,6 +190,55 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Previous Flow: Add an item" }));
     expect(kept.flow).toBe("add-an-item");
+  });
+
+  it("shows the QA Results the extension sends, and records the one picked at once", () => {
+    const { host, send, sent } = fakeHost();
+    const checked = kb({ "add-an-item": flow("Add an item", "list", { paths: [{ ...withQa, qa: twoQaSteps }] }) });
+    render(<App host={host} />);
+    send({ type: "knowledgeBase", knowledgeBase: checked });
+    send({ type: "qaResults", results: { "add-an-item": { main: { open: { state: "passed", note: "", date: new Date().toISOString() } } } } });
+    fireEvent.keyDown(document.body, { key: "c" });
+    expect(screen.getByText("1 passed · 1 to check")).toBeTruthy();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Note about what you saw" }), { target: { value: "Gone." } });
+    fireEvent.click(screen.getByRole("button", { name: "Failed" }));
+
+    expect(sent).toContainEqual({ type: "recordQaResult", flow: "add-an-item", path: "main", step: "close", state: "failed", note: "Gone." });
+    expect(screen.getByText("Main path checked")).toBeTruthy();
+    expect(screen.getByText("“Gone.”")).toBeTruthy();
+  });
+
+  it("asks the extension to save a note, start the path over, open a terminal, and the agent to fix a failed QA Step", () => {
+    const { host, send, sent } = fakeHost();
+    const checked = kb({ "add-an-item": flow("Add an item", "list", { paths: [{ ...withQa, qa: twoQaSteps }] }) });
+    render(<App host={host} />);
+    send({ type: "knowledgeBase", knowledgeBase: checked });
+    send({ type: "qaResults", results: { "add-an-item": { main: { open: { state: "failed", note: "", date: new Date().toISOString() } } } } });
+    fireEvent.keyDown(document.body, { key: "c" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Open a terminal here" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ask the agent to fix this" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open the list." }));
+    const note = screen.getByRole("textbox", { name: "Note about what you saw" });
+    fireEvent.change(note, { target: { value: "Empty." } });
+    fireEvent.blur(note);
+    fireEvent.click(screen.getByRole("button", { name: "Start over" }));
+
+    expect(sent).toContainEqual({ type: "openTerminal" });
+    expect(sent).toContainEqual({ type: "askAgent", prompt: expect.stringContaining("I did: Open the list.") });
+    expect(sent).toContainEqual({ type: "noteQaResult", flow: "add-an-item", path: "main", step: "open", note: "Empty." });
+    expect(sent).toContainEqual({ type: "resetQaResults", flow: "add-an-item", path: "main" });
+    expect(screen.getByText("2 QA Steps to check")).toBeTruthy();
+  });
+
+  it("says results cannot be recorded when the extension says so", () => {
+    const { host, send } = fakeHost();
+    render(<App host={host} />);
+    send({ type: "knowledgeBase", knowledgeBase: twoFlows });
+    send({ type: "qaResults", results: null });
+    fireEvent.keyDown(document.body, { key: "c" });
+    expect(screen.getByText("Results cannot be recorded yet: they need a git repo with at least one commit.")).toBeTruthy();
   });
 
   it("stays on the Variant it shows when the knowledge base is sent again", () => {

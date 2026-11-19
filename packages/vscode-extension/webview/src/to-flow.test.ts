@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeBase } from "../../src/messages";
-import { askPrompt, flowOrder, toFlow } from "./to-flow";
+import { askPrompt, fixPrompt, flowOrder, toFlow } from "./to-flow";
 
 const qa = { setup: [], steps: [] };
+const mainQa = {
+  setup: ["Sign in as a Cook."],
+  steps: [
+    { id: "add", do: "Add `Milk x2`.", expect: "Milk appears with a quantity of 2." },
+    { do: "Close the list.", expect: "It closes." },
+  ],
+};
 
 const kb: KnowledgeBase = {
   repo: { name: "pantry", root: "/apps/pantry" },
@@ -32,7 +39,7 @@ const kb: KnowledgeBase = {
           id: "main",
           name: "Main path",
           outcome: "The item is on the list.",
-          qa,
+          qa: mainQa,
           steps: [
             { id: "type", does: "Types an item.", sees: "It appears.", system: "Saves it.", parts: ["add-item-box", "list-sync"] },
             { id: "close", does: "Closes the list." },
@@ -116,6 +123,7 @@ describe("toFlow", () => {
         id: "main",
         name: "Main path",
         outcome: "The item is on the list.",
+        qa: mainQa,
         steps: [
           { does: "Types an item.", sees: "It appears.", system: "Saves it.", parts: ["add-item-box", "list-sync"] },
           { does: "Closes the list.", parts: [] },
@@ -127,6 +135,7 @@ describe("toFlow", () => {
         when: "The item is there.",
         outcome: "Nothing changes.",
         divergesAt: 1,
+        qa,
         steps: [
           { does: "Types an item.", parts: ["add-item-box"], shared: true },
           { sees: "A warning.", parts: ["warning"] },
@@ -137,9 +146,18 @@ describe("toFlow", () => {
         name: "The Step it leaves at is gone",
         when: "Someone removed that Step.",
         outcome: "Unknown.",
+        qa,
         steps: [{ does: "Does its own thing.", parts: [] }],
       },
     ]);
+  });
+
+  it("takes a path with no Manual QA Check as one with nothing to set up and no QA Step", () => {
+    const read = kb.flows["add-an-item"]!;
+    const [main, ...variants] = read.paths;
+    const without = { ...main!, qa: undefined } as unknown as typeof main & {};
+    const flowWithout = toFlow({ ...kb, flows: { "add-an-item": { ...read, paths: [without, ...variants] } } }, "add-an-item")!;
+    expect(flowWithout.paths[0].qa).toEqual({ setup: [], steps: [] });
   });
 
   it("brings only the Parts its paths' Steps name", () => {
@@ -198,5 +216,27 @@ describe("askPrompt", () => {
       'About the Part "Add item box" in the Flow "Add an item to the list" of the Revelio knowledge base: ' +
         "Reads what the Cook types. It lives in src/AddItemBox.tsx#AddItemBox.\n\n",
     );
+  });
+});
+
+describe("fixPrompt", () => {
+  const flow = toFlow(kb, "add-an-item")!;
+  const failed = { do: "Add `Milk x2`.", expect: "Milk appears with a quantity of 2.", note: "It shows Milk x2 as the name." };
+
+  it("asks the agent to fix a failed QA Step, with what the Builder did, expected and saw", () => {
+    expect(fixPrompt(flow, flow.paths[0], [failed])).toBe(
+      'In the Flow "Add an item to the list" of the Revelio knowledge base, a QA Step of the Manual QA Check of the main path failed.\n\n' +
+        "I did: Add `Milk x2`.\n" +
+        "I expected: Milk appears with a quantity of 2.\n" +
+        "I saw: It shows Milk x2 as the name.\n\n" +
+        "Find why, and fix it.",
+    );
+  });
+
+  it("names the Variant, numbers each failed QA Step, and leaves out a note not written", () => {
+    const prompt = fixPrompt(flow, flow.paths[1]!, [failed, { do: "Close the list.", expect: "It closes.", note: "" }]);
+    expect(prompt).toContain('2 QA Steps of the Manual QA Check of the Variant "The item is already on the list" failed.');
+    expect(prompt).toContain("1. I did: Add `Milk x2`.\n   I expected: Milk appears with a quantity of 2.\n   I saw: It shows Milk x2 as the name.\n\n");
+    expect(prompt).toContain("2. I did: Close the list.\n   I expected: It closes.\n\nFind why, and fix them.");
   });
 });
