@@ -45,6 +45,10 @@ export function App({ host }: { host: Host }) {
     openFlowFile: () => host.post({ type: "openFlowFile", flow: id }),
     openAnchor: (anchor) => host.post({ type: "openAnchor", at: anchor }),
     askAbout: (part) => host.post({ type: "askAgent", prompt: askPrompt(flow, part) }),
+    openLastChange: () => {
+      const last = changes?.[id]?.last;
+      if (last) host.post({ type: "openCommit", sha: last.sha, files: last.files });
+    },
   };
 
   // Keyed by Flow, so a Part open on one Flow is not open on the next.

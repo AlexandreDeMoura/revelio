@@ -168,7 +168,7 @@ describe("toFlow", () => {
     const changes = {
       "add-an-item": {
         uncommitted: true,
-        last: { sha: "7c2e9a4b5d", subject: "Parse quantities", date: "2026-11-19T10:00:00Z" },
+        last: { sha: "7c2e9a4b5d", subject: "Parse quantities", date: "2026-11-19T10:00:00Z", files: ["src/list.ts"] },
       },
     };
     const changed = toFlow(kb, "add-an-item", changes, now)!;

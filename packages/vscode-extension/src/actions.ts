@@ -1,7 +1,9 @@
 // What the buttons of the Revelio view do in VS Code: open a place in the code or a Flow file
-// beside the view, and hand the agent a question.
+// beside the view, show what a commit changed, and hand the agent a question.
+import nodePath from "node:path";
 import * as vscode from "vscode";
 import { anchorTarget, definitionOffset } from "./anchor-target";
+import { commitChanges, fileAt } from "./commit-changes";
 
 // Opens beside the view the place `at` names, at its symbol when it names one.
 export async function openAnchor(appRoot: string, at: string): Promise<void> {
@@ -28,6 +30,57 @@ export async function openAnchor(appRoot: string, at: string): Promise<void> {
 // Opens beside the view the file of a Flow.
 export function openFlowFile(appRoot: string, flow: string): Promise<void> {
   return openAnchor(appRoot, `knowledge-base/flows/${flow}.yaml`);
+}
+
+// Shows beside the active editor, in VS Code's changes editor, what the commit `sha` changed in
+// `files`, from the app's root: in every file it changed when it changed none of them.
+export async function openCommit(appRoot: string, sha: string, files: string[]): Promise<void> {
+  const short = sha.slice(0, 7);
+  let changes: ReturnType<typeof commitChanges>;
+  try {
+    changes = commitChanges(appRoot, sha, files);
+  } catch {
+    void vscode.window.showErrorMessage(`Revelio cannot show commit ${short}: git does not have it.`);
+    return;
+  }
+  const { subject, parent, files: changed } = changes;
+  const resources = changed.map((file) => [
+    vscode.Uri.file(nodePath.join(appRoot, file.path)),
+    parent && file.before !== undefined ? commitFileUri(appRoot, parent, file.before) : undefined,
+    file.after !== undefined ? commitFileUri(appRoot, sha, file.after) : undefined,
+  ]);
+  await focusBeside();
+  await vscode.commands.executeCommand("vscode.changes", `${short} · ${subject}`, resources);
+}
+
+// The scheme of a file as a commit has it, which `commitContent` reads from git.
+export const commitScheme = "revelio-commit";
+
+// The file `file`, from the app's root, as the commit `ref` has it. Its path is the file's own,
+// so the editor colours it as it colours the file.
+export function commitFileUri(appRoot: string, ref: string, file: string): vscode.Uri {
+  return vscode.Uri.file(nodePath.join(appRoot, file)).with({
+    scheme: commitScheme,
+    query: new URLSearchParams({ root: appRoot, ref, file }).toString(),
+  });
+}
+
+export const commitContent: vscode.TextDocumentContentProvider = {
+  provideTextDocumentContent(uri) {
+    const query = new URLSearchParams(uri.query);
+    const [root, ref, file] = [query.get("root"), query.get("ref"), query.get("file")];
+    return root && ref && file ? fileAt(root, ref, file) : "";
+  },
+};
+
+// Makes the editor group beside the active one the active group, as `ViewColumn.Beside` does,
+// making that group when there is none: the changes editor opens in the active group only.
+async function focusBeside(): Promise<void> {
+  const from = vscode.window.tabGroups.activeTabGroup;
+  await vscode.commands.executeCommand("workbench.action.focusRightGroup");
+  if (vscode.window.tabGroups.activeTabGroup === from) {
+    await vscode.commands.executeCommand("workbench.action.newGroupRight");
+  }
 }
 
 const claudeCode = "anthropic.claude-code";

@@ -13,7 +13,7 @@ export type { Commit } from "./code-changes.js";
 export type AnchorsFrom = "exact" | "after" | "disk" | "before-first";
 export type RecentCommit = Commit & Changes & { anchorsFrom: AnchorsFrom };
 export type FlowChanges = {
-  flows: Record<string, { uncommitted: boolean; last?: Commit }>;
+  flows: Record<string, { uncommitted: boolean; last?: RecentCommit }>;
   recent: RecentCommit[];
   uncommitted: Changes;
 };

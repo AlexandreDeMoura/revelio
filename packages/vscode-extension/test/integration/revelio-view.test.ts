@@ -1,6 +1,11 @@
 // Runs inside a real VS Code, with the extension loaded, through `npm run test:integration`.
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import * as vscode from "vscode";
+import { commitFileUri, openCommit } from "../../src/actions";
 
 const VIEW_TYPE = "revelio.view";
 
@@ -71,5 +76,80 @@ describe("The Revelio view", () => {
     await open();
     await until(activeTabIsRevelio, "the Revelio view is open again");
     assert.equal(revelioTabs().length, 1);
+  });
+});
+
+// A git repo with two commits: the second changes `list.ts` and adds `sync.ts`.
+function appWithTwoCommits() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "revelio-commit-"));
+  const git = (...args: string[]) =>
+    execFileSync("git", ["-c", "user.name=Builder", "-c", "user.email=builder@example.com", ...args], {
+      cwd: root,
+      encoding: "utf8",
+    }).trim();
+  git("init", "--quiet");
+  fs.writeFileSync(path.join(root, "list.ts"), "export const list = [];\n");
+  git("add", "--all");
+  git("commit", "--quiet", "--message", "first");
+  const first = git("rev-parse", "HEAD");
+  fs.writeFileSync(path.join(root, "list.ts"), "export const list = [1];\n");
+  fs.writeFileSync(path.join(root, "sync.ts"), "export function sync() {}\n");
+  git("add", "--all");
+  git("commit", "--quiet", "--message", "Change the list");
+  return { root, first, second: git("rev-parse", "HEAD") };
+}
+
+// The changes editor adds to its tab's label how many files it shows.
+const tabsLabelled = (label: string) =>
+  vscode.window.tabGroups.all.flatMap((group) => group.tabs).filter((tab) => tab.label.startsWith(label));
+
+describe("A commit's changes", () => {
+  afterEach(async () => {
+    await closeAllEditors();
+    await until(() => vscode.window.tabGroups.all.every((group) => group.tabs.length === 0), "every tab is closed");
+  });
+
+  it("open beside the active editor, in VS Code's changes editor, named by the commit", async () => {
+    const { root, second } = appWithTwoCommits();
+    await vscode.commands.executeCommand("workbench.action.files.newUntitledFile");
+
+    await openCommit(root, second, ["list.ts"]);
+
+    const title = `${second.slice(0, 7)} · Change the list (1 file)`;
+    await until(() => tabsLabelled(title).length === 1, "the commit's changes are open");
+    assert.equal(tabsLabelled(title)[0]?.group.viewColumn, vscode.ViewColumn.Two);
+  });
+
+  it("open in the editor group already beside the active one, not in a new one", async () => {
+    const { root, second } = appWithTwoCommits();
+    await vscode.commands.executeCommand("workbench.action.files.newUntitledFile");
+    await vscode.window.showTextDocument(await vscode.workspace.openTextDocument({ content: "beside" }), {
+      viewColumn: vscode.ViewColumn.Beside,
+    });
+    await vscode.commands.executeCommand("workbench.action.focusFirstEditorGroup");
+    await until(() => vscode.window.tabGroups.activeTabGroup.viewColumn === vscode.ViewColumn.One, "the first group is active");
+
+    await openCommit(root, second, ["list.ts"]);
+
+    const title = `${second.slice(0, 7)} · Change the list (1 file)`;
+    await until(() => tabsLabelled(title).length === 1, "the commit's changes are open");
+    assert.equal(tabsLabelled(title)[0]?.group.viewColumn, vscode.ViewColumn.Two);
+    assert.equal(vscode.window.tabGroups.all.length, 2);
+  });
+
+  it("show each file as the commit and its parent have it, and nothing where they have no such file", async () => {
+    const { root, first, second } = appWithTwoCommits();
+    const text = async (ref: string, file: string) =>
+      (await vscode.workspace.openTextDocument(commitFileUri(root, ref, file))).getText();
+
+    assert.equal(await text(first, "list.ts"), "export const list = [];\n");
+    assert.equal(await text(second, "list.ts"), "export const list = [1];\n");
+    assert.equal(await text(first, "sync.ts"), "");
+  });
+
+  it("say so when git does not have the commit, and open nothing", async () => {
+    const { root } = appWithTwoCommits();
+    await openCommit(root, "0".repeat(40), ["list.ts"]);
+    assert.ok(vscode.window.tabGroups.all.every((group) => group.tabs.length === 0));
   });
 });

@@ -1,7 +1,7 @@
 import os from "node:os";
 import path from "node:path";
 import * as vscode from "vscode";
-import { askAgent, openAnchor, openFlowFile } from "./actions";
+import { askAgent, openAnchor, openCommit, openFlowFile } from "./actions";
 import { changesMessage } from "./changes-message";
 import { knowledgeBaseMessage } from "./knowledge-base-message";
 import type { ExtensionMessage, WebviewMessage } from "./messages";
@@ -80,6 +80,8 @@ export class RevelioPanel {
         return void (root && openFlowFile(root, message.flow));
       case "askAgent":
         return void askAgent(message.prompt);
+      case "openCommit":
+        return void (root && openCommit(root, message.sha, message.files));
     }
   }
 

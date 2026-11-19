@@ -15,7 +15,15 @@ export async function changesMessage(
     const flows: Record<string, FlowChange> = {};
     for (const [flow, { uncommitted, last }] of Object.entries(reader.changes.flows)) {
       flows[flow] = last
-        ? { uncommitted, last: { sha: last.sha, subject: last.subject, date: last.date } }
+        ? {
+            uncommitted,
+            last: {
+              sha: last.sha,
+              subject: last.subject,
+              date: last.date,
+              files: last.files.filter((file) => file.flows.includes(flow)).map((file) => file.path),
+            },
+          }
         : { uncommitted };
     }
     return { type: "changes", flows };

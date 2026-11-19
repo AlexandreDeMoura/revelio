@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { commitContent, commitScheme } from "./actions";
 import { RevelioPanel } from "./revelio-panel";
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -11,6 +12,8 @@ export function activate(context: vscode.ExtensionContext): void {
       },
     }),
     openButton(),
+    // Gives the changes editor each file as a commit has it, when the Flow page shows what a commit changed.
+    vscode.workspace.registerTextDocumentContentProvider(commitScheme, commitContent),
   );
 }
 

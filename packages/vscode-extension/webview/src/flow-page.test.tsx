@@ -75,7 +75,13 @@ const flow: Flow = {
 
 // Renders the page with every action recorded.
 function page(shown: Flow = flow) {
-  const actions: FlowActions = { openFlow: vi.fn(), openFlowFile: vi.fn(), openAnchor: vi.fn(), askAbout: vi.fn() };
+  const actions: FlowActions = {
+    openFlow: vi.fn(),
+    openFlowFile: vi.fn(),
+    openAnchor: vi.fn(),
+    askAbout: vi.fn(),
+    openLastChange: vi.fn(),
+  };
   return { ...render(<FlowPage flow={shown} actions={actions} />), actions };
 }
 
@@ -136,6 +142,12 @@ describe("FlowPage", () => {
     page({ ...flow, lastChange: undefined, uncommitted: true });
     expect(screen.queryByText(/Last changed in/)).toBeNull();
     expect(screen.getByText("Changes not committed")).toBeTruthy();
+  });
+
+  it("shows what the commit that last changed the Flow changed, when its id is clicked", () => {
+    const { actions } = page();
+    fireEvent.click(screen.getByRole("button", { name: "7c2e9a4" }));
+    expect(actions.openLastChange).toHaveBeenCalled();
   });
 
   it("opens on Read the Flow, with its Steps counted", () => {

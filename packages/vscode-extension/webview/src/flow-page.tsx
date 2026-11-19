@@ -36,6 +36,8 @@ export type FlowActions = {
   openFlowFile(): void;
   openAnchor(at: string): void;
   askAbout(part: Part): void;
+  // Shows what the commit that last changed the Flow changed.
+  openLastChange(): void;
 };
 
 export function FlowPage({
@@ -283,9 +285,14 @@ function Header({ flow, actions }: { flow: Flow; actions: FlowActions }) {
           <span className="meta-item">
             <Commit />
             Last changed in
-            <span className="mono commit" title={flow.lastChange.subject}>
+            <button
+              type="button"
+              className="link mono commit"
+              title={flow.lastChange.subject}
+              onClick={actions.openLastChange}
+            >
               {flow.lastChange.sha}
-            </span>
+            </button>
             · {flow.lastChange.ago}
           </span>
         )}

@@ -29,9 +29,21 @@ describe("changesMessage", () => {
     expect(message.type).toBe("changes");
     expect(message.flows?.[flowId]).toMatchObject({
       uncommitted: false,
-      last: { sha: second, subject: "Make the tool step return one" },
+      last: { sha: second, subject: "Make the tool step return one", files: [codeFile] },
     });
     expect(Date.parse(message.flows?.[flowId]?.last?.date ?? "")).not.toBeNaN();
+  });
+
+  it("sends, of the last commit, only the files whose change changed the Flow", async () => {
+    const root = app();
+    commitAll(root, "first");
+    changeTheCode(root);
+    fs.writeFileSync(path.join(root, "README.md"), "Another file\n");
+    commitAll(root, "Change the tool step and the README");
+
+    const message = await changesMessage(root, home());
+
+    expect(message.flows?.[flowId]?.last?.files).toEqual([codeFile]);
   });
 
   it("says a Flow has changes not committed", async () => {
@@ -50,7 +62,7 @@ describe("changesMessage", () => {
 
     const message = await changesMessage(root, home());
 
-    expect(Object.keys(message.flows?.[flowId]?.last ?? {}).sort()).toEqual(["date", "sha", "subject"]);
+    expect(Object.keys(message.flows?.[flowId]?.last ?? {}).sort()).toEqual(["date", "files", "sha", "subject"]);
   });
 
   it("sends no commit and no change outside a git repo", async () => {

@@ -5,10 +5,11 @@ import type { KnowledgeBase } from "../../../src/knowledge-base.js";
 export type { KnowledgeBase };
 
 // What git says of one Flow: whether the code its Parts' Anchors point to has changes not
-// committed, and the last commit that changed it, if one did.
+// committed, and the last commit that changed it, if one did, with the files (from the app's
+// root) whose change in that commit changed the Flow.
 export type FlowChange = {
   uncommitted: boolean;
-  last?: { sha: string; subject: string; date: string };
+  last?: { sha: string; subject: string; date: string; files: string[] };
 };
 
 // From the webview to the extension.
@@ -20,7 +21,10 @@ export type WebviewMessage =
   // Opens beside the view the file of the Flow with this id.
   | { type: "openFlowFile"; flow: string }
   // Hands the agent a question to finish and send.
-  | { type: "askAgent"; prompt: string };
+  | { type: "askAgent"; prompt: string }
+  // Shows beside the view what the commit `sha` changed in these files, from the app's root:
+  // in every file it changed when it changed none of them.
+  | { type: "openCommit"; sha: string; files: string[] };
 
 // From the extension to the webview.
 export type ExtensionMessage =

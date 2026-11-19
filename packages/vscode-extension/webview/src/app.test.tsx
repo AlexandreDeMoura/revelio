@@ -125,7 +125,7 @@ describe("App", () => {
 
     send({
       type: "changes",
-      flows: { "add-an-item": { uncommitted: false, last: { sha: "7c2e9a4b5d", subject: "Parse", date: new Date().toISOString() } } },
+      flows: { "add-an-item": { uncommitted: false, last: { sha: "7c2e9a4b5d", subject: "Parse", date: new Date().toISOString(), files: ["src/Box.tsx"] } } },
     });
     expect(screen.getByTitle("Parse").textContent).toBe("7c2e9a4");
   });
@@ -143,6 +143,20 @@ describe("App", () => {
     expect(sent).toContainEqual({ type: "openFlowFile", flow: "add-an-item" });
     expect(sent).toContainEqual({ type: "openAnchor", at: "src/Box.tsx#Box" });
     expect(sent).toContainEqual({ type: "askAgent", prompt: expect.stringContaining('the Part "Add item box"') });
+  });
+
+  it("asks the extension to show what the commit that last changed the Flow changed in its files", () => {
+    const { host, send, sent } = fakeHost();
+    render(<App host={host} />);
+    send({ type: "knowledgeBase", knowledgeBase: twoFlows });
+    send({
+      type: "changes",
+      flows: { "add-an-item": { uncommitted: false, last: { sha: "7c2e9a4b5d", subject: "Parse", date: new Date().toISOString(), files: ["src/Box.tsx"] } } },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "7c2e9a4" }));
+
+    expect(sent).toContainEqual({ type: "openCommit", sha: "7c2e9a4b5d", files: ["src/Box.tsx"] });
   });
 
   it("opens the Flow a precondition names", () => {
