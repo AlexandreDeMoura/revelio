@@ -7,7 +7,8 @@
       "request": "launch",
       "args": [
         "--disable-extensions",
-        "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
+        "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension",
+        "${workspaceFolder}/.vscode/extension-host.code-workspace"
       ],
       "outFiles": ["${workspaceFolder}/packages/vscode-extension/dist/**/*.js"],
       "preLaunchTask": "vscode-extension: watch"

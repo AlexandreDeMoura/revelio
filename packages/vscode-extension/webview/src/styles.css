@@ -90,6 +90,17 @@ kbd {
   text-decoration: underline;
 }
 
+/* ---------- before the knowledge base arrives, or without one ---------- */
+
+.notice {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 28px 32px;
+  box-sizing: border-box;
+  color: var(--rv-fg-muted);
+  white-space: pre-wrap;
+}
+
 /* ---------- the bar along the top ---------- */
 
 .toolbar {
@@ -278,6 +289,16 @@ kbd {
   background: var(--rv-control-bg);
   border: 1px solid var(--rv-border-strong);
   border-radius: 4px;
+}
+
+.flow-chip.to-write,
+.flow-chip.missing {
+  border-style: dashed;
+  background: none;
+}
+
+.uncommitted {
+  color: var(--vscode-editorWarning-foreground, #cca700);
 }
 
 /* ---------- Read the Flow, Check by hand ---------- */

@@ -2,3 +2,5 @@
 out/
 .vscode-test/
 *.vsix
+# Copied from the repo root by esbuild.mjs.
+grammars/

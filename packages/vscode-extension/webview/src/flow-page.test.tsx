@@ -1,22 +1,25 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Flow } from "./flow";
-import { FlowPage } from "./flow-page";
+import { FlowPage, type FlowActions } from "./flow-page";
 
 afterEach(cleanup);
 
 const flow: Flow = {
+  id: "add-an-item",
   app: "pantry",
   area: "Grocery list",
   name: "Add an item to the list",
   goal: "Put something on the household's grocery list so nobody forgets it.",
-  lastChange: { sha: "7c2e9a4", ago: "5 hours ago" },
+  lastChange: { sha: "7c2e9a4", subject: "Parse quantities", ago: "5 hours ago" },
+  uncommitted: false,
   actor: { name: "Cook", description: "The person who does the shopping." },
   trigger: "The Cook taps `Add item` at the top of the grocery list.",
   preconditions: [
-    { text: "The Cook has an account.", flow: "Sign up with an email" },
+    { text: "The Cook has an account.", flow: "Sign up with an email", flowId: "sign-up" },
     { text: "The household has a list on `/list`." },
+    { text: "Someone shared the list.", flow: "Share the list", toWrite: true },
   ],
   parts: {
     box: {
@@ -38,11 +41,17 @@ const flow: Flow = {
   ],
 };
 
+// Renders the page with every action recorded.
+function page(shown: Flow = flow) {
+  const actions: FlowActions = { openFlow: vi.fn(), openFlowFile: vi.fn(), openAnchor: vi.fn(), askAbout: vi.fn() };
+  return { ...render(<FlowPage flow={shown} actions={actions} />), actions };
+}
+
 const steps = () => within(screen.getByRole("list", { name: "Steps" })).getAllByRole("listitem");
 
 describe("FlowPage", () => {
   it("names the Flow, where it sits in the app, and what it is for", () => {
-    render(<FlowPage flow={flow} />);
+    page();
     expect(screen.getByRole("heading", { level: 1, name: "Add an item to the list" })).toBeTruthy();
     expect(screen.getByText(flow.goal)).toBeTruthy();
     const where = screen.getByRole("navigation", { name: "Where you are" });
@@ -51,23 +60,55 @@ describe("FlowPage", () => {
   });
 
   it("states the Actor, the Trigger and what holds before it starts", () => {
-    render(<FlowPage flow={flow} />);
+    page();
     const about = screen.getByRole("region", { name: "About this Flow" });
     expect(within(about).getByText("Cook")).toBeTruthy();
     expect(within(about).getByText("Add item").tagName).toBe("CODE");
     expect(within(about).getByRole("button", { name: "Sign up with an email" })).toBeTruthy();
     expect(within(about).getByText("/list").tagName).toBe("CODE");
+    expect(within(about).getByText("Share the list · to write").closest("button")).toBeNull();
+  });
+
+  it("opens the Flow a precondition names", () => {
+    const { actions } = page();
+    fireEvent.click(screen.getByRole("button", { name: "Sign up with an email" }));
+    expect(actions.openFlow).toHaveBeenCalledWith("sign-up");
+  });
+
+  it("opens the Flow file", () => {
+    const { actions } = page();
+    fireEvent.click(screen.getByRole("button", { name: "Open the Flow file" }));
+    expect(actions.openFlowFile).toHaveBeenCalled();
+  });
+
+  it("opens where a Part lives in the code, and asks the agent about it", () => {
+    const { actions } = page();
+    fireEvent.click(within(steps()[0]!).getByRole("button", { name: "Add item box" }));
+    fireEvent.click(screen.getByRole("button", { name: /The box at the top of the list/ }));
+    expect(actions.openAnchor).toHaveBeenCalledWith("src/list/AddItemBox.tsx#AddItemBox");
+    fireEvent.click(screen.getByRole("button", { name: "Ask the agent about this Part" }));
+    expect(actions.askAbout).toHaveBeenCalledWith(flow.parts.box);
+  });
+
+  it("says which commit last changed the Flow, only when it is known", () => {
+    const { unmount } = page();
+    expect(screen.getByTitle("Parse quantities").textContent).toBe("7c2e9a4");
+    expect(screen.queryByText("Changes not committed")).toBeNull();
+    unmount();
+    page({ ...flow, lastChange: undefined, uncommitted: true });
+    expect(screen.queryByText(/Last changed in/)).toBeNull();
+    expect(screen.getByText("Changes not committed")).toBeTruthy();
   });
 
   it("opens on Read the Flow, with its Steps counted", () => {
-    render(<FlowPage flow={flow} />);
+    page();
     expect(screen.getByRole("tab", { name: /Read the Flow/ }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByText("3 Steps")).toBeTruthy();
     expect(screen.getByText("3 Variants")).toBeTruthy();
   });
 
   it("shows each Step's Does, Sees and System, leaving out what is empty", () => {
-    render(<FlowPage flow={flow} />);
+    page();
     const [first, , third] = steps();
     expect(within(first!).getByText("Types an item.")).toBeTruthy();
     expect(within(first!).getByText("The item appears.")).toBeTruthy();
@@ -79,7 +120,7 @@ describe("FlowPage", () => {
   });
 
   it("names the Variants that leave the main path at a Step", () => {
-    render(<FlowPage flow={flow} />);
+    page();
     const [first, second, third] = steps();
     expect(within(first!).getByText(/A Variant leaves here/)).toBeTruthy();
     expect(within(second!).getByText(/Variants leave here/)).toBeTruthy();
@@ -88,7 +129,7 @@ describe("FlowPage", () => {
   });
 
   it("opens one Part at a time, with where it lives in the code", () => {
-    render(<FlowPage flow={flow} />);
+    page();
     const [first, second] = steps();
     const box = within(first!).getByRole("button", { name: "Add item box" });
     expect(box.getAttribute("aria-expanded")).toBe("false");
@@ -106,7 +147,7 @@ describe("FlowPage", () => {
   });
 
   it("closes an open Part when it is clicked again", () => {
-    render(<FlowPage flow={flow} />);
+    page();
     const [first] = steps();
     const box = within(first!).getByRole("button", { name: "Add item box" });
     fireEvent.click(box);

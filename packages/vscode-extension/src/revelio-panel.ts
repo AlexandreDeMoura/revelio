@@ -1,4 +1,7 @@
+import os from "node:os";
 import * as vscode from "vscode";
+import { askAgent, openAnchor, openFlowFile } from "./actions";
+import { changesMessage } from "./changes-message";
 import { knowledgeBaseMessage } from "./knowledge-base-message";
 import type { ExtensionMessage, WebviewMessage } from "./messages";
 import { newNonce, webviewHtml } from "./webview-html";
@@ -30,6 +33,10 @@ export class RevelioPanel {
   }
 
   private readonly disposables: vscode.Disposable[] = [];
+  private watcher: vscode.FileSystemWatcher | undefined;
+  private pending: ReturnType<typeof setTimeout> | undefined;
+  // Counts the sends, so changes read for an older one are not sent after a newer one's.
+  private sends = 0;
 
   private constructor(
     private readonly panel: vscode.WebviewPanel,
@@ -47,10 +54,55 @@ export class RevelioPanel {
     });
     panel.webview.onDidReceiveMessage((message: WebviewMessage) => this.answer(message), null, this.disposables);
     panel.onDidDispose(() => this.dispose(), null, this.disposables);
+    vscode.workspace.onDidChangeWorkspaceFolders(
+      () => {
+        this.watch();
+        void this.sendKnowledgeBase();
+      },
+      null,
+      this.disposables,
+    );
+    this.watch();
   }
 
   private answer(message: WebviewMessage): void {
-    if (message.type === "ready") this.post(knowledgeBaseMessage(appRoot()));
+    const root = appRoot();
+    switch (message.type) {
+      case "ready":
+        return void this.sendKnowledgeBase();
+      case "openAnchor":
+        return void (root && openAnchor(root, message.at));
+      case "openFlowFile":
+        return void (root && openFlowFile(root, message.flow));
+      case "askAgent":
+        return void askAgent(message.prompt);
+    }
+  }
+
+  // The knowledge base first, then what git says of its Flows, which takes longer.
+  private async sendKnowledgeBase(): Promise<void> {
+    const send = ++this.sends;
+    const root = appRoot();
+    this.post(knowledgeBaseMessage(root));
+    const changes = await changesMessage(root, os.homedir());
+    if (send === this.sends) this.post(changes);
+  }
+
+  // Sends the knowledge base again when a file of it is written, added or removed, so what an
+  // agent just wrote shows. An agent writes several files at once: they are sent once, together.
+  private watch(): void {
+    this.watcher?.dispose();
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    this.watcher = folder
+      ? vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, "knowledge-base{,/**}"))
+      : undefined;
+    const changed = () => {
+      clearTimeout(this.pending);
+      this.pending = setTimeout(() => void this.sendKnowledgeBase(), 150);
+    };
+    this.watcher?.onDidCreate(changed);
+    this.watcher?.onDidChange(changed);
+    this.watcher?.onDidDelete(changed);
   }
 
   private post(message: ExtensionMessage): void {
@@ -59,6 +111,8 @@ export class RevelioPanel {
 
   private dispose(): void {
     if (RevelioPanel.current === this) RevelioPanel.current = undefined;
+    clearTimeout(this.pending);
+    this.watcher?.dispose();
     for (const disposable of this.disposables.splice(0)) disposable.dispose();
   }
 }

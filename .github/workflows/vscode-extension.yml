@@ -4,9 +4,9 @@ name: VS Code extension
 on:
   push:
     branches: [main]
-    paths: ['packages/vscode-extension/**', 'src/knowledge-base.ts', 'src/read-knowledge-base.ts', 'package-lock.json', '.github/workflows/vscode-extension.yml']
+    paths: ['packages/vscode-extension/**', 'src/**', 'package-lock.json', '.github/workflows/vscode-extension.yml']
   pull_request:
-    paths: ['packages/vscode-extension/**', 'src/knowledge-base.ts', 'src/read-knowledge-base.ts', 'package-lock.json', '.github/workflows/vscode-extension.yml']
+    paths: ['packages/vscode-extension/**', 'src/**', 'package-lock.json', '.github/workflows/vscode-extension.yml']
 
 permissions:
   contents: read
@@ -25,7 +25,8 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
-      - run: npm ci # the repo root's: the extension bundles its knowledge base reading, with yaml
+      # The repo root's packages and grammars: the extension bundles its knowledge base and git reading.
+      - run: npm ci && npm run grammars
         working-directory: .
       - run: npm ci
       - run: npm run typecheck

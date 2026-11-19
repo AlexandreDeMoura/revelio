@@ -33,17 +33,26 @@ export type Variant = {
 
 export type Precondition = {
   text: string;
-  // The Flow that brings it about, when it names one.
+  // The name of the Flow that brings it about, when it names one.
   flow?: string;
+  // That Flow's id, when it has a file the page can open.
+  flowId?: string;
+  // That Flow is a Flow to write.
+  toWrite?: true;
 };
 
 export type Flow = {
+  // Its file name without `.yaml`.
+  id: string;
   app: string;
   area: string;
   name: string;
   // The goal the Flow pursues, in one sentence.
   goal: string;
-  lastChange: { sha: string; ago: string };
+  // The last commit that changed the Flow, when git has said: its short id, its subject, how long ago.
+  lastChange?: { sha: string; subject: string; ago: string };
+  // The code its Parts' Anchors point to has changes not committed.
+  uncommitted: boolean;
   actor: { name: string; description: string };
   trigger: string;
   preconditions: Precondition[];

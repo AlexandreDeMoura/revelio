@@ -1,8 +1,8 @@
 // The Flow page: what a Flow is for, who carries it out, and its main path Step by Step,
 // each Step's Parts opening onto where they live in the code.
 //
-// Buttons that need the extension (opening a file, a commit, another Flow, the chat) do
-// nothing yet: they wait for the messages between the webview and the extension.
+// The search, Overview, Changes, the breadcrumb menus, the path picker and the Variant links
+// do nothing yet: they wait for the pages they open.
 import { useState, type ReactNode } from "react";
 import type { Anchor, Flow, Part, Step } from "./flow";
 import {
@@ -24,17 +24,38 @@ import {
 
 type OpenPart = { step: number; part: string } | null;
 
-export function FlowPage({ flow }: { flow: Flow }) {
+// Another Flow the page can go to.
+export type FlowLink = { name: string; open: () => void };
+
+// What the page's buttons ask for. `at` is an Anchor's `path#Symbol`.
+export type FlowActions = {
+  openFlow(id: string): void;
+  openFlowFile(): void;
+  openAnchor(at: string): void;
+  askAbout(part: Part): void;
+};
+
+export function FlowPage({
+  flow,
+  actions,
+  previous,
+  next,
+}: {
+  flow: Flow;
+  actions: FlowActions;
+  previous?: FlowLink;
+  next?: FlowLink;
+}) {
   const [open, setOpen] = useState<OpenPart>(null);
   const toggle = (step: number, part: string) =>
     setOpen((current) => (current?.step === step && current.part === part ? null : { step, part }));
 
   return (
     <div className="flow-page">
-      <Toolbar flow={flow} />
+      <Toolbar flow={flow} previous={previous} next={next} />
       <main className="flow">
-        <Header flow={flow} />
-        <About flow={flow} />
+        <Header flow={flow} actions={actions} />
+        <About flow={flow} actions={actions} />
 
         <div role="tablist" aria-label="How to use this Flow" className="tabs">
           <button type="button" role="tab" id="tab-read" aria-selected="true" aria-controls="panel-read" className="tab">
@@ -66,6 +87,7 @@ export function FlowPage({ flow }: { flow: Flow }) {
                 index={i}
                 openPart={open?.step === i ? open.part : null}
                 onToggle={(part) => toggle(i, part)}
+                actions={actions}
               />
             ))}
           </ol>
@@ -75,7 +97,7 @@ export function FlowPage({ flow }: { flow: Flow }) {
   );
 }
 
-function Toolbar({ flow }: { flow: Flow }) {
+function Toolbar({ flow, previous, next }: { flow: Flow; previous?: FlowLink; next?: FlowLink }) {
   return (
     <div className="toolbar">
       <nav aria-label="Where you are" className="crumbs">
@@ -107,10 +129,24 @@ function Toolbar({ flow }: { flow: Flow }) {
           Changes
         </button>
         <span aria-hidden="true" className="toolbar-divider" />
-        <button type="button" className="icon-button" aria-label="Previous Flow" disabled>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label={previous ? `Previous Flow: ${previous.name}` : "Previous Flow"}
+          title={previous?.name}
+          disabled={!previous}
+          onClick={previous?.open}
+        >
           <ArrowLeft />
         </button>
-        <button type="button" className="icon-button" aria-label="Next Flow">
+        <button
+          type="button"
+          className="icon-button"
+          aria-label={next ? `Next Flow: ${next.name}` : "Next Flow"}
+          title={next?.name}
+          disabled={!next}
+          onClick={next?.open}
+        >
           <ArrowRight />
         </button>
       </div>
@@ -118,21 +154,24 @@ function Toolbar({ flow }: { flow: Flow }) {
   );
 }
 
-function Header({ flow }: { flow: Flow }) {
+function Header({ flow, actions }: { flow: Flow; actions: FlowActions }) {
   return (
     <header className="flow-header">
       <h1>{flow.name}</h1>
       <p className="goal">{flow.goal}</p>
       <div className="flow-meta">
-        <span className="meta-item">
-          <Commit />
-          Last changed in
-          <button type="button" className="link mono">
-            {flow.lastChange.sha}
-          </button>
-          · {flow.lastChange.ago}
-        </span>
-        <button type="button" className="link meta-item">
+        {flow.uncommitted && <span className="meta-item uncommitted">Changes not committed</span>}
+        {flow.lastChange && (
+          <span className="meta-item">
+            <Commit />
+            Last changed in
+            <span className="mono commit" title={flow.lastChange.subject}>
+              {flow.lastChange.sha}
+            </span>
+            · {flow.lastChange.ago}
+          </span>
+        )}
+        <button type="button" className="link meta-item" onClick={actions.openFlowFile}>
           <File />
           Open the Flow file
         </button>
@@ -141,7 +180,7 @@ function Header({ flow }: { flow: Flow }) {
   );
 }
 
-function About({ flow }: { flow: Flow }) {
+function About({ flow, actions }: { flow: Flow; actions: FlowActions }) {
   return (
     <section aria-label="About this Flow" className="about">
       <div className="fact">
@@ -163,11 +202,17 @@ function About({ flow }: { flow: Flow }) {
             {flow.preconditions.map((pre, i) => (
               <li key={i}>
                 <InlineText text={pre.text} />
-                {pre.flow && (
-                  <button type="button" className="flow-chip">
+                {pre.flowId !== undefined ? (
+                  <button type="button" className="flow-chip" onClick={() => actions.openFlow(pre.flowId!)}>
                     <ArrowRight size={14} />
                     {pre.flow}
                   </button>
+                ) : (
+                  pre.flow && (
+                    <span className={`flow-chip ${pre.toWrite ? "to-write" : "missing"}`}>
+                      {pre.toWrite ? `${pre.flow} · to write` : pre.flow}
+                    </span>
+                  )
                 )}
               </li>
             ))}
@@ -184,12 +229,14 @@ function StepRow({
   index,
   openPart,
   onToggle,
+  actions,
 }: {
   flow: Flow;
   step: Step;
   index: number;
   openPart: string | null;
   onToggle: (part: string) => void;
+  actions: FlowActions;
 }) {
   const leaving = flow.variants.filter((variant) => variant.divergesAt === index);
   const part = openPart ? flow.parts[openPart] : undefined;
@@ -252,7 +299,7 @@ function StepRow({
           </div>
         )}
 
-        {part && <PartPanel part={part} />}
+        {part && <PartPanel part={part} actions={actions} />}
       </div>
     </li>
   );
@@ -267,7 +314,7 @@ function Line({ label, className, children }: { label: string; className: string
   );
 }
 
-function PartPanel({ part }: { part: Part }) {
+function PartPanel({ part, actions }: { part: Part; actions: FlowActions }) {
   return (
     <div className={`part-panel ${part.anchors.length ? "" : "alone"}`}>
       <div className="part-about">
@@ -276,7 +323,7 @@ function PartPanel({ part }: { part: Part }) {
           <InlineText text={part.is} />
         </p>
         {part.anchors.length > 0 && (
-          <button type="button" className="link ask">
+          <button type="button" className="link ask" onClick={() => actions.askAbout(part)}>
             <Chat size={14} />
             Ask the agent about this Part
           </button>
@@ -288,7 +335,7 @@ function PartPanel({ part }: { part: Part }) {
           <ul>
             {part.anchors.map((anchor) => (
               <li key={anchor.at}>
-                <AnchorRow anchor={anchor} />
+                <AnchorRow anchor={anchor} onOpen={() => actions.openAnchor(anchor.at)} />
               </li>
             ))}
           </ul>
@@ -299,10 +346,10 @@ function PartPanel({ part }: { part: Part }) {
   );
 }
 
-function AnchorRow({ anchor }: { anchor: Anchor }) {
+function AnchorRow({ anchor, onOpen }: { anchor: Anchor; onOpen: () => void }) {
   const [file, symbol] = anchor.at.split("#");
   return (
-    <button type="button" className="anchor">
+    <button type="button" className="anchor" onClick={onOpen}>
       <span className="anchor-text">
         <span className="anchor-label">{anchor.label}</span>
         <span className="anchor-at mono">

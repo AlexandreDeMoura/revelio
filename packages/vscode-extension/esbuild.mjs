@@ -3,6 +3,8 @@
 //   --production   minify, without source maps, for the packaged extension
 //   --integration  bundle the integration tests into `out/integration` instead
 import * as esbuild from "esbuild";
+import fs from "node:fs";
+import { createRequire } from "node:module";
 
 const flags = new Set(process.argv.slice(2));
 const watch = flags.has("--watch");
@@ -24,6 +26,21 @@ const watchLog = {
   },
 };
 
+// The repo root's code the extension bundles finds its files from where it runs
+// (`import.meta.url`): tree-sitter's `web-tree-sitter.wasm` beside `dist/extension.js`, and the
+// grammars in `grammars/`, as in the root package. They are copied there.
+function copyTreeSitterFiles() {
+  const root = new URL("../../", import.meta.url);
+  const grammars = new URL("grammars/", root);
+  if (!fs.existsSync(grammars)) throw new Error("No grammars at the repo root: run `npm run grammars` there first.");
+  fs.mkdirSync(new URL("dist/", import.meta.url), { recursive: true });
+  fs.cpSync(grammars, new URL("grammars/", import.meta.url), { recursive: true });
+  const runtime = createRequire(new URL("package.json", root)).resolve("web-tree-sitter/web-tree-sitter.wasm");
+  fs.copyFileSync(runtime, new URL("dist/web-tree-sitter.wasm", import.meta.url));
+}
+
+if (!integration) copyTreeSitterFiles();
+
 const context = await esbuild.context({
   ...(integration
     ? { entryPoints: ["test/integration/*.test.ts"], outdir: "out/integration" }
@@ -33,6 +50,9 @@ const context = await esbuild.context({
   platform: "node",
   target: "node20",
   external: ["vscode"],
+  // A CommonJS bundle has no `import.meta`: its URL is the bundle's own.
+  define: { "import.meta.url": "__importMetaUrl" },
+  banner: { js: 'const __importMetaUrl = require("node:url").pathToFileURL(__filename).href;' },
   minify: production,
   sourcemap: !production,
   sourcesContent: false,

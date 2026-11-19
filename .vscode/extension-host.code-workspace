@@ -1,0 +1,6 @@
+// The repo, opened as a workspace in the Extension Development Host that "Run the Revelio extension"
+// starts. VS Code does not open a folder that another window already has open, so the repo
+// folder itself would be dropped; this workspace holds the same folder under another name.
+{
+  "folders": [{ "path": ".." }]
+}
