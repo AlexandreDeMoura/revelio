@@ -23,12 +23,24 @@ export type Step = {
   system?: string;
   // The ids of the Parts this Step names, keys of `Flow.parts`.
   parts: string[];
+  // A Variant's Step it shares with the main path, before the Variant leaves it.
+  shared?: true;
 };
 
-export type Variant = {
+// One way through the Flow, start to end: the main path or a Variant.
+export type Path = {
+  // `main` for the main path, else the Variant's id.
+  id: string;
   name: string;
-  // The index of the main path's Step it leaves at.
-  divergesAt: number;
+  // What holds when the Flow ends this way.
+  outcome: string;
+  // A Variant's condition, which sends the Flow down it. The main path has none.
+  when?: string;
+  // The index of the Step where a Variant leaves the main path. Missing on the main path, and
+  // on a Variant whose `diverges_at` names no Step of it: that Variant then has only its own Steps.
+  divergesAt?: number;
+  // A Variant's Steps start with those it shares with the main path.
+  steps: Step[];
 };
 
 export type Precondition = {
@@ -56,8 +68,7 @@ export type Flow = {
   actor: { name: string; description: string };
   trigger: string;
   preconditions: Precondition[];
-  // The main path.
-  steps: Step[];
-  variants: Variant[];
+  // The main path first, then the Variants.
+  paths: [Path, ...Path[]];
   parts: Record<string, Part>;
 };

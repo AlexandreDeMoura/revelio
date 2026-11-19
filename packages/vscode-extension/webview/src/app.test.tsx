@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ExtensionMessage, KnowledgeBase, WebviewMessage } from "../../src/messages";
 import { App } from "./app";
@@ -167,5 +167,25 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Previous Flow: Add an item" }));
     expect(kept.flow).toBe("add-an-item");
+  });
+
+  it("stays on the Variant it shows when the knowledge base is sent again", () => {
+    const { host, send } = fakeHost();
+    const withVariant = () =>
+      kb({
+        "add-an-item": flow("Add an item", "list", {
+          paths: [
+            { id: "main", name: "Main path", outcome: "Done.", qa, steps: [{ id: "one", does: "Starts it." }] },
+            { id: "full", name: "The list is full", when: "It has 100 items.", outcome: "Refused.", divergesAt: 0, qa, steps: [{ id: "refused", sees: "A refusal." }] },
+          ],
+        }),
+      });
+    render(<App host={host} />);
+    send({ type: "knowledgeBase", knowledgeBase: withVariant() });
+    fireEvent.click(screen.getByRole("button", { name: /^Choose a path/ }));
+    fireEvent.click(within(screen.getByRole("group", { name: "Choose a path" })).getByRole("button", { name: /The list is full/ }));
+
+    send({ type: "knowledgeBase", knowledgeBase: withVariant() });
+    expect(screen.getByText("A refusal.")).toBeTruthy();
   });
 });

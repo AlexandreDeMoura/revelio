@@ -1,9 +1,10 @@
 // Turns the knowledge base the extension sends into the Flows the Flow page shows.
 import type { FlowChange, KnowledgeBase } from "../../src/messages";
-import type { Flow, Part, Precondition } from "./flow";
+import type { Flow, Part, Path, Precondition, Step } from "./flow";
 
 type Read = KnowledgeBase["flows"][string] & {};
 type ReadPrecondition = NonNullable<Read["preconditions"]>[number];
+type ReadPath = Read["paths"][number];
 
 // The Flow with this id, or undefined when the knowledge base has none. `changes` is what git
 // said of each Flow, once the extension has sent it.
@@ -15,13 +16,8 @@ export function toFlow(
 ): Flow | undefined {
   const flow = kb.flows[id];
   if (!flow) return undefined;
-  const [main, ...variants] = flow.paths;
-  const steps = (main?.steps ?? []).map(({ does, sees, system, parts = [] }) => ({
-    ...(does !== undefined && { does }),
-    ...(sees !== undefined && { sees }),
-    ...(system !== undefined && { system }),
-    parts,
-  }));
+  const [main = { id: "main", name: "Main path", outcome: "", steps: [] }, ...variants] = flow.paths;
+  const paths: Flow["paths"] = [toPath(main), ...variants.map(toPath)];
   const actor = kb.actors[flow.actor];
   const change = changes?.[id];
 
@@ -38,10 +34,29 @@ export function toFlow(
     actor: { name: actor?.name ?? flow.actor, description: actor?.is ?? "" },
     trigger: flow.trigger,
     preconditions: (flow.preconditions ?? []).map((pre) => precondition(kb, pre)),
-    steps,
-    // A Variant whose `diverges_at` names no Step leaves nowhere the page can show.
-    variants: variants.flatMap(({ name, divergesAt }) => (divergesAt === undefined ? [] : [{ name, divergesAt }])),
-    parts: partsNamed(kb, steps.flatMap((step) => step.parts)),
+    paths,
+    parts: partsNamed(kb, paths.flatMap((path) => path.steps.flatMap((step) => step.parts))),
+  };
+}
+
+function toPath({ id, name, outcome, when, divergesAt, steps }: Omit<ReadPath, "qa">): Path {
+  return {
+    id,
+    name,
+    outcome,
+    ...(when !== undefined && { when }),
+    ...(divergesAt !== undefined && { divergesAt }),
+    steps: steps.map(toStep),
+  };
+}
+
+function toStep({ does, sees, system, parts = [], shared }: ReadPath["steps"][number]): Step {
+  return {
+    ...(does !== undefined && { does }),
+    ...(sees !== undefined && { sees }),
+    ...(system !== undefined && { system }),
+    parts,
+    ...(shared && { shared }),
   };
 }
 

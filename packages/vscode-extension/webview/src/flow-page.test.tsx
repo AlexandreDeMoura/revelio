@@ -29,15 +29,47 @@ const flow: Flow = {
     },
     sync: { name: "List sync", is: "Sends each change to every phone.", anchors: [] },
   },
-  steps: [
-    { does: "Types an item.", sees: "The item appears.", system: "Saves the item.", parts: ["box", "sync"] },
-    { does: "Opens the list on a second phone.", system: "Sends the list.", parts: ["sync"] },
-    { does: "Closes the list.", parts: [] },
-  ],
-  variants: [
-    { name: "The item is already on the list", divergesAt: 0 },
-    { name: "The phone is offline", divergesAt: 1 },
-    { name: "The list cannot be loaded", divergesAt: 1 },
+  paths: [
+    {
+      id: "main",
+      name: "Main path",
+      outcome: "The item is on the list for everyone.",
+      steps: [
+        { does: "Types an item.", sees: "The item appears.", system: "Saves the item.", parts: ["box", "sync"] },
+        { does: "Opens the list on a second phone.", system: "Sends the list.", parts: ["sync"] },
+        { does: "Closes the list.", parts: [] },
+      ],
+    },
+    {
+      id: "already-there",
+      name: "The item is already on the list",
+      when: "The Cook types an item the list has.",
+      outcome: "The list keeps one of it.",
+      divergesAt: 0,
+      steps: [{ sees: "A warning says it is there.", parts: ["box"] }],
+    },
+    {
+      id: "offline",
+      name: "The phone is offline",
+      when: "The second phone has no network.",
+      outcome: "The phone shows the list it last had.",
+      divergesAt: 1,
+      steps: [
+        { does: "Types an item.", sees: "The item appears.", system: "Saves the item.", parts: ["box", "sync"], shared: true },
+        { does: "Opens the list on a second phone.", sees: "An offline banner.", parts: ["sync"] },
+      ],
+    },
+    {
+      id: "cannot-load",
+      name: "The list cannot be loaded",
+      when: "The server does not answer.",
+      outcome: "The phone says the list cannot be loaded.",
+      divergesAt: 1,
+      steps: [
+        { does: "Types an item.", sees: "The item appears.", system: "Saves the item.", parts: ["box", "sync"], shared: true },
+        { sees: "An error.", parts: [] },
+      ],
+    },
   ],
 };
 
@@ -48,6 +80,12 @@ function page(shown: Flow = flow) {
 }
 
 const steps = () => within(screen.getByRole("list", { name: "Steps" })).getAllByRole("listitem");
+const picker = () => screen.getByRole("button", { name: /^Choose a path/ });
+const pathMenu = () => screen.getByRole("group", { name: "Choose a path" });
+const choosePath = (name: RegExp) => {
+  fireEvent.click(picker());
+  fireEvent.click(within(pathMenu()).getByRole("button", { name }));
+};
 
 describe("FlowPage", () => {
   it("names the Flow, where it sits in the app, and what it is for", () => {
@@ -154,5 +192,82 @@ describe("FlowPage", () => {
     fireEvent.click(box);
     expect(box.getAttribute("aria-expanded")).toBe("false");
     expect(within(first!).queryByText("Reads what the Cook types.")).toBeNull();
+  });
+
+  it("ends the main path with its outcome", () => {
+    page();
+    expect(screen.getByText("The item is on the list for everyone.")).toBeTruthy();
+  });
+
+  it("lists the main path and every Variant in the path picker, with when each is taken", () => {
+    page();
+    expect(picker().getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("group", { name: "Choose a path" })).toBeNull();
+
+    fireEvent.click(picker());
+    expect(picker().getAttribute("aria-expanded")).toBe("true");
+    const options = within(pathMenu()).getAllByRole("button");
+    expect(options.map((option) => option.getAttribute("aria-pressed"))).toEqual(["true", "false", "false", "false"]);
+    expect(options[0]!.textContent).toContain("The item is on the list for everyone.");
+    expect(options[2]!.textContent).toContain("The phone is offline");
+    expect(options[2]!.textContent).toContain("The second phone has no network.");
+    expect(options[2]!.textContent).toContain("2 Steps · leaves at Step 2");
+  });
+
+  it("shows the Variant chosen: the Steps it shares, where it leaves the main path, and how it ends", () => {
+    page();
+    choosePath(/The phone is offline/);
+
+    expect(screen.queryByRole("group", { name: "Choose a path" })).toBeNull();
+    expect(picker().textContent).toContain("The phone is offline");
+    expect(screen.getByText("2 Steps · leaves at Step 2")).toBeTruthy();
+    const [shared, leaves] = steps();
+    expect(steps()).toHaveLength(2);
+    expect(within(shared!).getByText("Same as main path")).toBeTruthy();
+    expect(within(shared!).getByText("Types an item.")).toBeTruthy();
+    expect(within(leaves!).getByText("Leaves the main path")).toBeTruthy();
+    expect(within(leaves!).getByText("when The second phone has no network.")).toBeTruthy();
+    expect(within(leaves!).getByText("An offline banner.")).toBeTruthy();
+    expect(screen.getByText("The phone shows the list it last had.")).toBeTruthy();
+    expect(screen.queryByText(/leaves? here/)).toBeNull();
+  });
+
+  it("opens a Variant from the Step where it leaves the main path", () => {
+    page();
+    fireEvent.click(within(steps()[1]!).getByRole("button", { name: "The list cannot be loaded" }));
+    expect(picker().textContent).toContain("The list cannot be loaded");
+    expect(within(steps()[1]!).getByText("An error.")).toBeTruthy();
+  });
+
+  it("goes back to the main path from the path picker", () => {
+    page();
+    choosePath(/The phone is offline/);
+    choosePath(/^Main path/);
+    expect(picker().textContent).toContain("Follow the main path");
+    expect(steps()).toHaveLength(3);
+  });
+
+  it("closes the path picker on Escape, back on its button", () => {
+    page();
+    fireEvent.click(picker());
+    fireEvent.keyDown(within(pathMenu()).getAllByRole("button")[1]!, { key: "Escape" });
+    expect(screen.queryByRole("group", { name: "Choose a path" })).toBeNull();
+    expect(document.activeElement).toBe(picker());
+  });
+
+  it("closes a Part open on one path when another path is chosen", () => {
+    page();
+    fireEvent.click(within(steps()[0]!).getByRole("button", { name: "Add item box" }));
+    choosePath(/The phone is offline/);
+    expect(screen.queryByText("Reads what the Cook types.")).toBeNull();
+  });
+
+  it("says so when a Variant leaves at a Step the main path does not have", () => {
+    const lost = { id: "lost", name: "Lost its Step", when: "Someone removed that Step.", outcome: "Unknown.", steps: [{ does: "Its own.", parts: [] }] };
+    page({ ...flow, paths: [...flow.paths, lost] });
+    choosePath(/Lost its Step/);
+    expect(screen.getByText("It leaves at a Step the main path does not have.")).toBeTruthy();
+    expect(screen.getByText("Someone removed that Step.")).toBeTruthy();
+    expect(screen.getByText("1 Step")).toBeTruthy();
   });
 });

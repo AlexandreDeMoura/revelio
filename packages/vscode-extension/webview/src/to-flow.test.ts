@@ -45,7 +45,18 @@ const kb: KnowledgeBase = {
           when: "The item is there.",
           divergesAt: 1,
           qa,
-          steps: [{ id: "type", does: "Types an item.", shared: true }, { id: "warned", sees: "A warning." }],
+          steps: [
+            { id: "type", does: "Types an item.", parts: ["add-item-box"], shared: true },
+            { id: "warned", sees: "A warning.", parts: ["warning"] },
+          ],
+        },
+        {
+          id: "lost",
+          name: "The Step it leaves at is gone",
+          outcome: "Unknown.",
+          when: "Someone removed that Step.",
+          qa,
+          steps: [{ id: "own", does: "Does its own thing." }],
         },
       ],
     },
@@ -73,6 +84,7 @@ const kb: KnowledgeBase = {
       anchors: [{ label: "The box", at: "src/AddItemBox.tsx#AddItemBox", side: "screen" }],
     },
     "list-sync": { name: "List sync", is: "Sends each change.", anchors: [] },
+    warning: { name: "Already there warning", is: "Says the item is on the list.", anchors: [] },
     unused: { name: "Unused", is: "Named by no Step of this Flow.", anchors: [] },
   },
 };
@@ -98,16 +110,40 @@ describe("toFlow", () => {
     ]);
   });
 
-  it("takes the main path's Steps, and where each Variant leaves it", () => {
-    expect(flow.steps).toEqual([
-      { does: "Types an item.", sees: "It appears.", system: "Saves it.", parts: ["add-item-box", "list-sync"] },
-      { does: "Closes the list.", parts: [] },
+  it("takes the main path, then each Variant with the Steps it shares with the main path", () => {
+    expect(flow.paths).toEqual([
+      {
+        id: "main",
+        name: "Main path",
+        outcome: "The item is on the list.",
+        steps: [
+          { does: "Types an item.", sees: "It appears.", system: "Saves it.", parts: ["add-item-box", "list-sync"] },
+          { does: "Closes the list.", parts: [] },
+        ],
+      },
+      {
+        id: "already-there",
+        name: "The item is already on the list",
+        when: "The item is there.",
+        outcome: "Nothing changes.",
+        divergesAt: 1,
+        steps: [
+          { does: "Types an item.", parts: ["add-item-box"], shared: true },
+          { sees: "A warning.", parts: ["warning"] },
+        ],
+      },
+      {
+        id: "lost",
+        name: "The Step it leaves at is gone",
+        when: "Someone removed that Step.",
+        outcome: "Unknown.",
+        steps: [{ does: "Does its own thing.", parts: [] }],
+      },
     ]);
-    expect(flow.variants).toEqual([{ name: "The item is already on the list", divergesAt: 1 }]);
   });
 
-  it("brings only the Parts its Steps name", () => {
-    expect(Object.keys(flow.parts)).toEqual(["add-item-box", "list-sync"]);
+  it("brings only the Parts its paths' Steps name", () => {
+    expect(Object.keys(flow.parts)).toEqual(["add-item-box", "list-sync", "warning"]);
     expect(flow.parts["add-item-box"]?.anchors[0]?.at).toBe("src/AddItemBox.tsx#AddItemBox");
   });
 

@@ -1,16 +1,19 @@
 // The Flow page: what a Flow is for, who carries it out, and its main path Step by Step,
 // each Step's Parts opening onto where they live in the code.
 //
-// The search, Overview, Changes, the breadcrumb menus, the path picker and the Variant links
-// do nothing yet: they wait for the pages they open.
-import { useState, type ReactNode } from "react";
-import type { Anchor, Flow, Part, Step } from "./flow";
+// The path picker and the Variant links show a Variant's Steps instead.
+//
+// The search, Overview, Changes and the breadcrumb menus do nothing yet: they wait for the
+// pages they open.
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { Anchor, Flow, Part, Path, Step } from "./flow";
 import {
   AppIcon,
   ArrowDown,
   ArrowLeft,
   ArrowRight,
   Chat,
+  Check,
   ChevronDown,
   ChevronRight,
   Commit,
@@ -47,8 +50,15 @@ export function FlowPage({
   next?: FlowLink;
 }) {
   const [open, setOpen] = useState<OpenPart>(null);
+  const [pathId, setPathId] = useState("main");
   const toggle = (step: number, part: string) =>
     setOpen((current) => (current?.step === step && current.part === part ? null : { step, part }));
+  // The path chosen, while the Flow still has it, else the main path.
+  const path = flow.paths.find((candidate) => candidate.id === pathId) ?? flow.paths[0];
+  const choosePath = (id: string) => {
+    setPathId(id);
+    setOpen(null);
+  };
 
   return (
     <div className="flow-page">
@@ -64,37 +74,148 @@ export function FlowPage({
           <button type="button" role="tab" aria-selected="false" disabled className="tab">
             Check by hand <kbd>C</kbd>
           </button>
-          <span className="tabs-meta">{plural(flow.steps.length, "Step")}</span>
+          <span className="tabs-meta">{pathMeta(path)}</span>
         </div>
 
         <div role="tabpanel" id="panel-read" aria-labelledby="tab-read">
           <div className="path-bar">
-            <button type="button" className="path-picker">
-              <ArrowDown className="muted" />
-              <span className="path-name">Main path</span>
-              <span className="muted">Follow the main path</span>
-              {flow.variants.length > 0 && <span className="count">{plural(flow.variants.length, "Variant")}</span>}
-              <ChevronDown />
-            </button>
+            <PathPicker paths={flow.paths} shown={path} onChoose={choosePath} />
           </div>
 
+          {path.id !== "main" && path.divergesAt === undefined && (
+            <p className="variant-banner">
+              <span className="banner-label">Variant</span>
+              <span>{path.when}</span>
+              <span className="uncommitted">It leaves at a Step the main path does not have.</span>
+            </p>
+          )}
+
           <ol aria-label="Steps" className="steps">
-            {flow.steps.map((step, i) => (
+            {path.steps.map((step, i) => (
               <StepRow
-                key={i}
+                key={`${path.id}-${i}`}
                 flow={flow}
+                path={path}
                 step={step}
                 index={i}
                 openPart={open?.step === i ? open.part : null}
                 onToggle={(part) => toggle(i, part)}
+                onChoosePath={choosePath}
                 actions={actions}
               />
             ))}
           </ol>
+
+          <div className="line outcome">
+            <span className="line-label">Outcome</span>
+            <p>
+              <InlineText text={path.outcome} />
+            </p>
+          </div>
         </div>
       </main>
     </div>
   );
+}
+
+// Chooses the path the Steps follow: the main path, or one of the Variants, with when each is taken.
+function PathPicker({ paths, shown, onChoose }: { paths: Path[]; shown: Path; onChoose: (id: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const picker = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const variants = paths.length - 1;
+  const isMain = shown.id === "main";
+
+  // A click anywhere else closes the menu.
+  useEffect(() => {
+    if (!expanded) return;
+    const away = (event: PointerEvent) => {
+      if (!picker.current?.contains(event.target as Node)) setExpanded(false);
+    };
+    document.addEventListener("pointerdown", away);
+    return () => document.removeEventListener("pointerdown", away);
+  }, [expanded]);
+
+  const close = () => {
+    setExpanded(false);
+    trigger.current?.focus();
+  };
+  const option = (path: Path) => {
+    const selected = path.id === shown.id;
+    return (
+      <button
+        key={path.id}
+        type="button"
+        className="path-option"
+        aria-pressed={selected}
+        onClick={() => {
+          onChoose(path.id);
+          close();
+        }}
+      >
+        {path.id === "main" ? <ArrowDown className="muted" /> : <Fork className="muted" />}
+        <span className="path-option-text">
+          <span className="path-name">{path.name}</span>
+          {(path.id === "main" ? path.outcome : path.when) && (
+            <span className="path-option-detail">{path.id === "main" ? path.outcome : path.when}</span>
+          )}
+          <span className="path-option-meta">{pathMeta(path)}</span>
+        </span>
+        <span className="path-option-check">{selected && <Check />}</span>
+      </button>
+    );
+  };
+
+  return (
+    <div className="path-picker-wrap" ref={picker}>
+      <button
+        ref={trigger}
+        type="button"
+        className="path-picker"
+        aria-label={`Choose a path. Now: ${isMain ? "Main path" : `Variant, ${shown.name}`}`}
+        aria-expanded={expanded}
+        aria-controls="path-menu"
+        onClick={() => setExpanded((was) => !was)}
+      >
+        {isMain ? <ArrowDown className="muted" /> : <Fork className="muted" />}
+        <span className="path-kind">{isMain ? "Main path" : "Variant"}</span>
+        <span className="path-name path-shown">{isMain ? "Follow the main path" : shown.name}</span>
+        {variants > 0 && <span className="count">{plural(variants, "Variant")}</span>}
+        <ChevronDown className="chevron" />
+      </button>
+      {expanded && (
+        <div
+          id="path-menu"
+          role="group"
+          aria-label="Choose a path"
+          className="path-menu"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.stopPropagation();
+              close();
+            }
+          }}
+        >
+          <p className="path-heading">Main path</p>
+          {option(paths[0]!)}
+          {variants > 0 && (
+            <>
+              <p className="path-heading variants">
+                Variants <span>{variants}</span>
+              </p>
+              {paths.slice(1).map(option)}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// How many Steps a path has, and where a Variant leaves the main path.
+function pathMeta(path: Path): string {
+  const leaves = path.divergesAt === undefined ? "" : ` · leaves at Step ${path.divergesAt + 1}`;
+  return `${plural(path.steps.length, "Step")}${leaves}`;
 }
 
 function Toolbar({ flow, previous, next }: { flow: Flow; previous?: FlowLink; next?: FlowLink }) {
@@ -225,26 +346,43 @@ function About({ flow, actions }: { flow: Flow; actions: FlowActions }) {
 
 function StepRow({
   flow,
+  path,
   step,
   index,
   openPart,
   onToggle,
+  onChoosePath,
   actions,
 }: {
   flow: Flow;
+  path: Path;
   step: Step;
   index: number;
   openPart: string | null;
   onToggle: (part: string) => void;
+  onChoosePath: (id: string) => void;
   actions: FlowActions;
 }) {
-  const leaving = flow.variants.filter((variant) => variant.divergesAt === index);
+  // On the main path, the Variants that leave it at this Step.
+  const leaving = path.id === "main" ? flow.paths.slice(1).filter((variant) => variant.divergesAt === index) : [];
+  const leavesHere = path.id !== "main" && path.divergesAt === index;
   const part = openPart ? flow.parts[openPart] : undefined;
 
   return (
-    <li className="step">
+    <li className={`step ${step.shared ? "shared" : ""}`}>
       <span className="step-number">{index + 1}</span>
       <div className="step-body">
+        {step.shared && (
+          <p className="step-tags">
+            <span className="tag">Same as main path</span>
+          </p>
+        )}
+        {leavesHere && (
+          <p className="step-tags">
+            <span className="tag leaves">Leaves the main path</span>
+            <span className="when">when {path.when}</span>
+          </p>
+        )}
         {step.does && (
           <Line label="Does" className="does">
             <InlineText text={step.does} />
@@ -266,8 +404,8 @@ function StepRow({
             <Fork size={14} />
             {leaving.length === 1 ? "A Variant leaves here:" : "Variants leave here:"}
             {leaving.map((variant, i) => (
-              <span key={variant.name}>
-                <button type="button" className="link">
+              <span key={variant.id}>
+                <button type="button" className="link" onClick={() => onChoosePath(variant.id)}>
                   {variant.name}
                 </button>
                 {i < leaving.length - 1 && ","}

@@ -71,3 +71,4 @@ export const File = icon(
 export const Fork = icon(<path d="M5 2.5v11M11 2.5v2a3 3 0 01-3 3H5" />);
 export const Chat = icon(<path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" />);
 export const OpenBeside = icon(<path d="M9 2.5h4.5V7M13.5 2.5L7.5 8.5M12 9.5v4H2.5V4h4" />);
+export const Check = icon(<path d="M3 8.5l3 3 7-7" />);

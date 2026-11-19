@@ -1,9 +1,11 @@
 import os from "node:os";
+import path from "node:path";
 import * as vscode from "vscode";
 import { askAgent, openAnchor, openFlowFile } from "./actions";
 import { changesMessage } from "./changes-message";
 import { knowledgeBaseMessage } from "./knowledge-base-message";
 import type { ExtensionMessage, WebviewMessage } from "./messages";
+import { anchoredFiles, refreshFor, refresher, type Refresh } from "./refresh";
 import { newNonce, webviewHtml } from "./webview-html";
 
 // The Revelio view: a tab in the editor that shows the webview built into `dist/webview`.
@@ -34,7 +36,9 @@ export class RevelioPanel {
 
   private readonly disposables: vscode.Disposable[] = [];
   private watcher: vscode.FileSystemWatcher | undefined;
-  private pending: ReturnType<typeof setTimeout> | undefined;
+  private readonly refresh = refresher((what) => void this.send(what), 150);
+  // The files the Anchors of the knowledge base last sent point to.
+  private anchored = new Set<string>();
   // Counts the sends, so changes read for an older one are not sent after a newer one's.
   private sends = 0;
 
@@ -57,7 +61,7 @@ export class RevelioPanel {
     vscode.workspace.onDidChangeWorkspaceFolders(
       () => {
         this.watch();
-        void this.sendKnowledgeBase();
+        void this.send("knowledgeBase");
       },
       null,
       this.disposables,
@@ -69,7 +73,7 @@ export class RevelioPanel {
     const root = appRoot();
     switch (message.type) {
       case "ready":
-        return void this.sendKnowledgeBase();
+        return void this.send("knowledgeBase");
       case "openAnchor":
         return void (root && openAnchor(root, message.at));
       case "openFlowFile":
@@ -79,26 +83,32 @@ export class RevelioPanel {
     }
   }
 
-  // The knowledge base first, then what git says of its Flows, which takes longer.
-  private async sendKnowledgeBase(): Promise<void> {
+  // The knowledge base first, unless only what git says is asked for, then what git says of
+  // its Flows, which takes longer.
+  private async send(what: Refresh): Promise<void> {
     const send = ++this.sends;
     const root = appRoot();
-    this.post(knowledgeBaseMessage(root));
+    if (what === "knowledgeBase") {
+      const message = knowledgeBaseMessage(root);
+      this.anchored = message.type === "knowledgeBase" ? anchoredFiles(message.knowledgeBase) : new Set();
+      this.post(message);
+    }
     const changes = await changesMessage(root, os.homedir());
     if (send === this.sends) this.post(changes);
   }
 
   // Sends the knowledge base again when a file of it is written, added or removed, so what an
-  // agent just wrote shows. An agent writes several files at once: they are sent once, together.
+  // agent just wrote shows, and what git says again when a commit moves git or the code an
+  // Anchor points to changes, so the Flow page's last change and changes not committed hold.
   private watch(): void {
     this.watcher?.dispose();
     const folder = vscode.workspace.workspaceFolders?.[0];
-    this.watcher = folder
-      ? vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, "knowledge-base{,/**}"))
-      : undefined;
-    const changed = () => {
-      clearTimeout(this.pending);
-      this.pending = setTimeout(() => void this.sendKnowledgeBase(), 150);
+    this.watcher = folder ? vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, "**")) : undefined;
+    const changed = (uri: vscode.Uri) => {
+      if (!folder) return;
+      const file = path.relative(folder.uri.fsPath, uri.fsPath).split(path.sep).join("/");
+      const what = refreshFor(file, this.anchored);
+      if (what) this.refresh.schedule(what);
     };
     this.watcher?.onDidCreate(changed);
     this.watcher?.onDidChange(changed);
@@ -111,7 +121,7 @@ export class RevelioPanel {
 
   private dispose(): void {
     if (RevelioPanel.current === this) RevelioPanel.current = undefined;
-    clearTimeout(this.pending);
+    this.refresh.stop();
     this.watcher?.dispose();
     for (const disposable of this.disposables.splice(0)) disposable.dispose();
   }
