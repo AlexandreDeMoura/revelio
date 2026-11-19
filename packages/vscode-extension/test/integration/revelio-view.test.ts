@@ -28,6 +28,16 @@ async function until(condition: () => boolean, what: string, timeoutMs = 5_000):
 const open = () => vscode.commands.executeCommand("revelio.open");
 const closeAllEditors = () => vscode.commands.executeCommand("workbench.action.closeAllEditors");
 
+// Runs first, before any test runs Revelio: Open, which would start the extension itself.
+describe("The Revelio button in the status bar", () => {
+  it("is there once VS Code has started, before Revelio: Open is run", async () => {
+    const extension = vscode.extensions.getExtension("revelio-ai.revelio");
+    assert.ok(extension, "the extension is installed");
+    // The button exists only while the extension is active.
+    await until(() => extension.isActive, "the extension is active", 10_000);
+  });
+});
+
 describe("The Revelio view", () => {
   afterEach(async () => {
     await closeAllEditors();

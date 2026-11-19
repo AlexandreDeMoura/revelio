@@ -467,11 +467,6 @@ kbd {
   overflow-wrap: anywhere;
 }
 
-.path-option-detail {
-  font-size: 12px;
-  color: var(--rv-fg);
-}
-
 .path-option-meta {
   font-size: 11px;
   color: var(--rv-fg-muted);

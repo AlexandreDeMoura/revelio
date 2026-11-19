@@ -4,7 +4,7 @@ The extension is its own package, with its own dependencies, tests and build. Ru
 
 ## Two halves
 
-- **The extension host**, in `src/`, runs in VS Code's Node and can use the `vscode` API. `src/extension.ts` registers the **Revelio: Open** command; `src/revelio-panel.ts` opens the Revelio view, a tab in the editor, and keeps at most one open. esbuild bundles it into `dist/extension.js`.
+- **The extension host**, in `src/`, runs in VS Code's Node and can use the `vscode` API. `src/extension.ts` registers the **Revelio: Open** command and puts a **Revelio** button that runs it at the right of the status bar, so the extension starts with VS Code; `src/revelio-panel.ts` opens the Revelio view, a tab in the editor, and keeps at most one open. esbuild bundles it into `dist/extension.js`.
 - **The webview**, in `webview/`, is the page inside that tab: React and TypeScript, in a browser with no Node and no `vscode` API. Vite builds it into `dist/webview/webview.js` and `webview.css`.
 
 `src/webview-html.ts` writes the page that joins the two. Its Content Security Policy lets in nothing but the extension's own files and runs only the one script carrying a fresh nonce. For that reason the webview is built as a single script with no chunks, and inline scripts or styles in the page do not run.
@@ -54,6 +54,7 @@ One checklist per thing the view does. Run them in the installed extension (see 
 ### Opening the view
 
 - [ ] ⇧⌘P → **Revelio: Open** opens a Revelio tab in the editor.
+- [ ] Once VS Code has started, a **Revelio** button with a map icon is at the right of the status bar. Its tooltip says "Open the Revelio view", and clicking it opens the Revelio tab, as **Revelio: Open** does.
 - [ ] Running it again, with the tab open, brings that tab forward instead of opening a second.
 - [ ] After closing the tab, **Revelio: Open** opens it again.
 - [ ] With the tab open, **Developer: Reload Window** brings it back after the reload, still showing the knowledge base.
@@ -71,7 +72,7 @@ One checklist per thing the view does. Run them in the installed extension (see 
 - [ ] The breadcrumb names the app, the Area and the Flow.
 - [ ] The Flow page shows the Flow's goal, Actor, Trigger, what comes before it, its Steps and its Outcome, as the Flow file says. A Flow named under "Before it starts" opens when clicked.
 - [ ] The header says "Last changed in" with the commit and how long ago, and "Changes not committed" when code one of the Flow's Anchors points to has changes not yet committed.
-- [ ] The path picker lists the main path and the Variants, with when each is taken. Choosing a Variant shows its Steps and Outcome; a Variant link under a Step does the same.
+- [ ] The path picker lists the main path and the Variants, each with only its name and its Steps (how many, and where a Variant leaves the main path). Choosing a Variant shows its Steps and Outcome; a Variant link under a Step does the same.
 - [ ] Clicking a Part opens it under its Step; clicking it again closes it.
 
 ### The buttons

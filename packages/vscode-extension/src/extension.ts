@@ -10,7 +10,20 @@ export function activate(context: vscode.ExtensionContext): void {
         RevelioPanel.revive(panel, context.extensionUri);
       },
     }),
+    openButton(),
   );
+}
+
+// The Revelio button at the right of the status bar, which opens the Revelio view.
+function openButton(): vscode.StatusBarItem {
+  const button = vscode.window.createStatusBarItem("revelio.open", vscode.StatusBarAlignment.Right);
+  button.name = "Revelio";
+  button.text = "$(map) Revelio";
+  button.tooltip = "Open the Revelio view";
+  button.accessibilityInformation = { label: "Open the Revelio view" };
+  button.command = "revelio.open";
+  button.show();
+  return button;
 }
 
 export function deactivate(): void {}

@@ -199,7 +199,7 @@ describe("FlowPage", () => {
     expect(screen.getByText("The item is on the list for everyone.")).toBeTruthy();
   });
 
-  it("lists the main path and every Variant in the path picker, with when each is taken", () => {
+  it("lists the main path and every Variant in the path picker, with only their name and Steps", () => {
     page();
     expect(picker().getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByRole("group", { name: "Choose a path" })).toBeNull();
@@ -208,9 +208,10 @@ describe("FlowPage", () => {
     expect(picker().getAttribute("aria-expanded")).toBe("true");
     const options = within(pathMenu()).getAllByRole("button");
     expect(options.map((option) => option.getAttribute("aria-pressed"))).toEqual(["true", "false", "false", "false"]);
-    expect(options[0]!.textContent).toContain("The item is on the list for everyone.");
+    expect(options[0]!.textContent).toContain("Main path");
+    expect(options[0]!.textContent).not.toContain("The item is on the list for everyone.");
     expect(options[2]!.textContent).toContain("The phone is offline");
-    expect(options[2]!.textContent).toContain("The second phone has no network.");
+    expect(options[2]!.textContent).not.toContain("The second phone has no network.");
     expect(options[2]!.textContent).toContain("2 Steps · leaves at Step 2");
   });
 

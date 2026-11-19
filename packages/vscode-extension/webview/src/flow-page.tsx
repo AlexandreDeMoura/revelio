@@ -156,9 +156,6 @@ function PathPicker({ paths, shown, onChoose }: { paths: Path[]; shown: Path; on
         {path.id === "main" ? <ArrowDown className="muted" /> : <Fork className="muted" />}
         <span className="path-option-text">
           <span className="path-name">{path.name}</span>
-          {(path.id === "main" ? path.outcome : path.when) && (
-            <span className="path-option-detail">{path.id === "main" ? path.outcome : path.when}</span>
-          )}
           <span className="path-option-meta">{pathMeta(path)}</span>
         </span>
         <span className="path-option-check">{selected && <Check />}</span>
