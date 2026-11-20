@@ -9,7 +9,7 @@ description: Update the knowledge base in `knowledge-base/` after a code change.
 
 ## Steps
 
-1. **List the code you changed**: every file you added, edited, renamed or deleted in this session (`git status`, `git diff`).
+1. **List the code you changed**: every file outside `knowledge-base/` you added, edited, renamed or deleted in this session (`git status`, `git diff`).
 2. **Find the Parts it touches.** Search `knowledge-base/parts/` for the path of each changed file. Add any Part whose capability you changed through a file it has no Anchor in yet.
 3. **Sort every change no Part covers.** A change from step 1 that no Part from step 2 carries belongs to a Flow that has no file. Name that Flow, then take its case:
    - **A whole new Flow**: the Actor can now pursue a goal the app did not offer before. Write the Flow now with the `write-a-flow` skill.
@@ -22,6 +22,8 @@ description: Update the knowledge base in `knowledge-base/` after a code change.
 8. **Tell the Builder** which knowledge base files you changed and, in plain words, what is different for the people using the app. End the message with one line per Flow to write your change falls inside, whether you added it or found it on the list: name the Flow and ask whether to write it now. On a yes, write it as in the first case of step 3.
 
 Done when every change from step 1 is carried by a Part or sorted into a case of step 3, every Part from step 2 and every Flow from step 5 has been re-read against the new code, and the Deterministic Check passes.
+
+`knowledge-base/` is committed with the code it describes. When you commit, or suggest a commit, put the knowledge base changes in the same commit as the code they describe, so that each commit's knowledge base is true of that commit's code.
 
 ## The files
 
