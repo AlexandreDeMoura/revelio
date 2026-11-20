@@ -155,8 +155,8 @@ function privatePaths(): string[] {
 
 // Removes the private install's own pieces. With `keepHidden`, what is left
 // of it (the knowledge base, a file with the Builder's own lines) stays hidden
-// from git; without it, nothing stays hidden, so the knowledge base can be
-// committed. Another checkout's private install keeps all it shares with this
+// from git; without it, only the Builder's personal files that are left stay
+// hidden, so the knowledge base can be committed. Another checkout's private install keeps all it shares with this
 // one: the alias, and everything the local exclude hides. Says whether there
 // was a private install here, and what became of the `git revelio` command.
 function removePrivate(repoRoot: string, { keepHidden }: { keepHidden: boolean }): { had: boolean; command: boolean; commandKeptFor: string | undefined } {
@@ -171,6 +171,7 @@ function removePrivate(repoRoot: string, { keepHidden }: { keepHidden: boolean }
   const hiding = hidesFromGit(repoRoot);
   const stillHidden = others.length > 0 ? privatePaths() : privatePaths().filter((p) => fs.existsSync(path.join(repoRoot, p)));
   if (hiding) hideFromGit(repoRoot, keepHidden ? stillHidden : []);
+  if (hiding && !keepHidden) keepPersonalHidden(repoRoot);
   return { had: had || hook || line || hiding, command: command === "removed", commandKeptFor: command === "kept" ? others[0] : undefined };
 }
 
@@ -320,6 +321,20 @@ const blockEnd = `# end ${command}`;
 function hideFromGit(repoRoot: string, paths: string[]) {
   const block = paths.length === 0 ? "" : [blockStart, ...paths.map((p) => `/${p}`), blockEnd].join("\n") + "\n";
   writeBlock(repoRoot, blockStart, blockEnd, block);
+}
+
+// The Builder's own `CLAUDE.local.md` and local settings are for them only,
+// but git saw neither while a private install hid it. Once the private
+// install is gone, those still there stay hidden, in a block of their own
+// that nothing removes, so that git never shows them as new.
+const personalPaths = [".claude/settings.local.json", "CLAUDE.local.md"];
+const personalStart = `# ${command}: personal files, hidden from git since the private install`;
+const personalEnd = `# ${command}: end of personal files`;
+
+function keepPersonalHidden(repoRoot: string) {
+  const paths = personalPaths.filter((p) => fs.existsSync(path.join(repoRoot, p)));
+  const block = paths.length === 0 ? "" : [personalStart, ...paths.map((p) => `/${p}`), personalEnd].join("\n") + "\n";
+  writeBlock(repoRoot, personalStart, personalEnd, block);
 }
 
 // Rewrites the block between `start` and `end` in the local exclude, at its

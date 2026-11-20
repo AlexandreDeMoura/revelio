@@ -115,8 +115,9 @@ test("init takes a private Fledgy install over: the agent is checked once, and g
   expect(setting(env, root, "--local", "--get-regexp", "^fledgy\\.")).toBeUndefined();
   expect(setting(env, root, "--get", "alias.revelio")).toBeUndefined();
   expect(read(root, ".git/info/exclude")).not.toContain("fledgy");
-  expect(read(root, ".git/info/exclude")).not.toContain("revelio");
+  expect(read(root, ".git/info/exclude")).not.toContain("/knowledge-base/");
   expect(gitSees(env, root)).toContain("?? knowledge-base/areas.yaml\n");
+  expect(gitSees(env, root)).not.toContain("CLAUDE.local.md");
 });
 
 test("init moves the Builder's history and QA Results out of Fledgy's folder, but never over Revelio's", () => {

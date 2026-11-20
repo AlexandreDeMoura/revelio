@@ -128,12 +128,49 @@ test("init takes a private install over: git sees the knowledge base, and the ag
   expect(read(root, ".claude/skills/map-the-app/SKILL.md")).toMatch(/^---\nname: map-the-app\n/);
   expect(setting(env, root, "--get", "alias.revelio")).toBeUndefined();
   expect(setting(env, root, "--local", "--get-regexp", "^revelio\\.")).toBeUndefined();
-  expect(read(root, ".git/info/exclude")).not.toContain("revelio");
   const seen = gitSees(env, root);
   for (const file of ["knowledge-base/areas.yaml", ".claude/settings.json", ".claude/skills/map-the-app/SKILL.md", "CLAUDE.md"]) {
     expect(seen).toContain(`?? ${file}\n`);
   }
   expect(seen).not.toContain(".revelio");
+});
+
+test("init keeps hiding from git the Builder's own CLAUDE.local.md and local settings that a private install hid", () => {
+  const env = machine();
+  const root = app();
+  privateInstall(env, root);
+
+  expect(revelio(env, path.join(root, "web"), "init").status).toBe(0);
+
+  const seen = gitSees(env, root);
+  expect(seen).not.toContain("CLAUDE.local.md");
+  expect(seen).not.toContain("settings.local.json");
+  expect(seen).toContain("?? knowledge-base/areas.yaml\n");
+  const exclude = read(root, ".git/info/exclude");
+  expect(exclude).toContain("\n/.claude/settings.local.json\n/CLAUDE.local.md\n");
+  expect(exclude).not.toContain("/knowledge-base/");
+  expect(exclude).not.toContain("/.revelio/");
+  expect(exclude).not.toContain("/.claude/skills/");
+
+  expect(revelio(env, path.join(root, "web"), "init").status).toBe(0);
+  expect(read(root, ".git/info/exclude")).toBe(exclude);
+  expect(revelio(env, root, "uninstall").status).toBe(0);
+  expect(read(root, ".git/info/exclude")).toBe(exclude);
+  expect(gitSees(env, root)).toBe("?? knowledge-base/areas.yaml\n");
+});
+
+test("init hides nothing more from git when a private install's CLAUDE.local.md and local settings held only Revelio's lines", () => {
+  const env = machine();
+  const root = app();
+  privateInstall(env, root);
+  write(root, "CLAUDE.local.md", `${privateLine}\n`);
+  write(root, ".claude/settings.local.json", JSON.stringify({ hooks: { Stop: [{ hooks: [privateHook] }] } }));
+
+  expect(revelio(env, path.join(root, "web"), "init").status).toBe(0);
+
+  expect(fs.existsSync(path.join(root, "CLAUDE.local.md"))).toBe(false);
+  expect(fs.existsSync(path.join(root, ".claude/settings.local.json"))).toBe(false);
+  expect(read(root, ".git/info/exclude")).not.toContain("revelio");
 });
 
 test("init refuses, and writes nothing, while another checkout of the repo has a private install, and goes on once that one is uninstalled", () => {
@@ -165,7 +202,7 @@ test("init refuses, and writes nothing, while another checkout of the repo has a
   expect(run.stderr).toBe("");
   expect(run.status).toBe(0);
   expect(setting(env, root, "--get", "alias.revelio")).toBeUndefined();
-  expect(read(root, ".git/info/exclude")).not.toContain("revelio");
+  expect(read(root, ".git/info/exclude")).not.toContain("/knowledge-base/");
 });
 
 test("uninstall removes a private install and its git revelio alias, and keeps the knowledge base hidden from git", () => {
