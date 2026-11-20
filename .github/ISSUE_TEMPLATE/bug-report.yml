@@ -20,16 +20,6 @@ body:
     attributes:
       label: How to make it happen again
       description: The commands you ran or the skill you used, in order. Say if it happens every time.
-  - type: dropdown
-    id: install
-    attributes:
-      label: Install
-      options:
-        - Private (`npx revelio-ai init`)
-        - Shared (`npx revelio-ai init --shared`)
-        - Not sure
-    validations:
-      required: true
   - type: input
     id: versions
     attributes:

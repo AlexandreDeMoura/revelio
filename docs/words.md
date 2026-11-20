@@ -18,7 +18,7 @@ Files in `knowledge-base/` that describe your app in plain words, so you can und
 
 Let’s take Claude on the web as an example: `areas.yaml` would list the Areas, `actors.yaml` the people who use the app, and `flows/` and `parts/` would hold one file per Flow and per Part.
 
-Good to know: the agent writes it, and updates it as it changes the code. You read it in the web view rather than in the files. With a private install it stays on your computer, hidden from git. With a shared install it is committed with the code, for the whole team.
+Good to know: the agent writes it, and updates it as it changes the code. You read it in the web view rather than in the files. It is committed with the code it describes, for the whole team.
 
 ### Area
 
@@ -186,7 +186,7 @@ The program that checks what can be checked without judgment: that the knowledge
 
 If `upgrade_plan` in `api/billing/routes.py` is renamed and *Plan change* is not updated, the check fails on its Anchor “The upgrade request”.
 
-Good to know: it runs each time the agent stops. If it fails, the agent is sent back once to fix the knowledge base. If it still fails when the agent stops again, you are shown what is left: ask the agent to fix it. You can run it yourself with `git revelio check` (private install) or `npx revelio-ai check` (shared install). It can’t tell whether the words are true: that is the agent’s judgment, and what your Manual QA Checks put to the test. The agent may call it the Deterministic Check.
+Good to know: it runs each time the agent stops. If it fails, the agent is sent back once to fix the knowledge base. If it still fails when the agent stops again, you are shown what is left: ask the agent to fix it. You can run it yourself with `npx revelio-ai check`, in the folder with your app's `package.json`. It can’t tell whether the words are true: that is the agent’s judgment, and what your Manual QA Checks put to the test. The agent may call it the Deterministic Check.
 
 ---
 

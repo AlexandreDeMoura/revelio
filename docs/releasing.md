@@ -33,7 +33,7 @@ The Claude Code plugin and the npm package always use the same version. Keep `ve
    gh release create vX.Y.Z --title "X.Y.Z" --notes "<what changed, for a Builder>"
    ```
 
-Builders get the new version with `npx revelio-ai@latest init`.
+Builders get the new version with `npm install -D revelio-ai@latest`, then `npx revelio-ai init`, in the folder with the app's `package.json`. `init` copies the new skills.
 
 ## If something goes wrong
 

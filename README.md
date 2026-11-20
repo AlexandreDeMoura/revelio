@@ -22,39 +22,42 @@ Can the agent misunderstand something? Yes. The automated checks don’t prove t
 
 ## Get started
 
-You need Node 20 or later, Claude Code, and your app in a git repo.
+You need Node 20 or later, Claude Code, and your app in a git repo with a `package.json`.
 
-In the repo, run:
+In the folder with your app's `package.json`, run:
 
 ```sh
+npm install -D revelio-ai
 npx revelio-ai init
 ```
 
-or, the same thing, `npm init revelio`.
+With pnpm, yarn or bun, add `revelio-ai` as a dev dependency with that tool instead of npm.
 
-Revelio installs for you only: it puts its copy in `.revelio/`, its skills in `.claude/skills/`, and hides all of it, and the `knowledge-base/` it will write, from git. Nothing changes for anyone else on the repo.
+Revelio installs in your app, for the whole team: its skills in `.claude/skills/`, a Stop hook in `.claude/settings.json` that checks the knowledge base each time the agent stops, and one line in `CLAUDE.md`. Commit them. Commit the `knowledge-base/` it writes too, with the code it describes.
 
 It then offers to open Claude Code and start mapping. Otherwise, open Claude Code at the repo's root and type `/map-the-app`, or just say *Map the app*. Revelio reads your code, proposes the Areas of your app for you to correct, then writes their Flows with you, one Area at a time, over several sessions.
 
 To read what it writes, run:
 
 ```sh
-git revelio view
+npx revelio-ai view
 ```
+
+Run each command in the folder with your app's `package.json`:
 
 | Command | What it does |
 |---|---|
-| `git revelio view` | Opens the web view of the knowledge base, at http://localhost:4173 |
-| `git revelio check` | Checks the knowledge base's structure and code references |
-| `npx revelio-ai@latest init` | Upgrades Revelio |
-| `git revelio uninstall` | Removes Revelio, and keeps your knowledge base |
+| `npx revelio-ai view` | Opens the web view of the knowledge base, at http://localhost:4173 |
+| `npx revelio-ai check` | Checks the knowledge base's structure and code references |
+| `npm install -D revelio-ai@latest`, then `npx revelio-ai init` | Upgrades Revelio |
+| `npx revelio-ai uninstall` | Removes Revelio, and keeps your knowledge base |
 
-**For a team.** To commit the knowledge base and share it, install Revelio in the app with `npm install -D revelio-ai`, then run `npx revelio-ai init --shared` from the same folder, and commit what it adds. Running that in a private install converts it.
+**Installed Revelio 0.3.0 or before?** It installed for you only, in `.revelio/`, and hid the knowledge base from git. Add `revelio-ai` to the app and run `npx revelio-ai init`, as above: it replaces that install, and git then sees `knowledge-base/`, ready to commit. Your QA results and history are kept.
 
 ## Not yet
 
 - Claude Code only.
-- Web apps that can have npm, on macOS or Linux. Windows is untested.
+- Apps with a `package.json`, on macOS or Linux. An app without one, Python only for example, gets one with `npm init -y` at its root. Windows is untested.
 - Code references into TypeScript, JavaScript and Python only.
 - One person per machine: QA results are not shared.
 - The check covers structure, not whether the words are true.
