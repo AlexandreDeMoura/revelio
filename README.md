@@ -27,11 +27,10 @@ You need Node 20 or later, Claude Code, and your app in a git repo with a `packa
 In the folder with your app's `package.json`, run:
 
 ```sh
-npm install -D revelio-ai
-npx revelio-ai init
+npm init revelio
 ```
 
-With pnpm, yarn or bun, add `revelio-ai` as a dev dependency with that tool instead of npm.
+or, the same thing, `npm install -D revelio-ai` then `npx revelio-ai init`. With pnpm, yarn or bun, add `revelio-ai` as a dev dependency with that tool, then run `npx revelio-ai init`.
 
 Revelio installs in your app, for the whole team: its skills in `.claude/skills/`, a Stop hook in `.claude/settings.json` that checks the knowledge base each time the agent stops, and one line in `CLAUDE.md`. Commit them. Commit the `knowledge-base/` it writes too, with the code it describes.
 
@@ -49,10 +48,10 @@ Run each command in the folder with your app's `package.json`:
 |---|---|
 | `npx revelio-ai view` | Opens the web view of the knowledge base, at http://localhost:4173 |
 | `npx revelio-ai check` | Checks the knowledge base's structure and code references |
-| `npm install -D revelio-ai@latest`, then `npx revelio-ai init` | Upgrades Revelio |
+| `npm init revelio` | Upgrades Revelio |
 | `npx revelio-ai uninstall` | Removes Revelio, and keeps your knowledge base |
 
-**Installed Revelio 0.3.0 or before?** It installed for you only, in `.revelio/`, and hid the knowledge base from git. Add `revelio-ai` to the app and run `npx revelio-ai init`, as above: it replaces that install, and git then sees `knowledge-base/`, ready to commit. Your QA results and history are kept.
+**Installed Revelio 0.3.0 or before?** It installed for you only, in `.revelio/`, and hid the knowledge base from git. Run `npm init revelio`, as above: it replaces that install, and git then sees `knowledge-base/`, ready to commit. Your QA results and history are kept.
 
 ## Not yet
 

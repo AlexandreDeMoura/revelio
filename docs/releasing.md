@@ -33,7 +33,7 @@ The Claude Code plugin and the npm package always use the same version. Keep `ve
    gh release create vX.Y.Z --title "X.Y.Z" --notes "<what changed, for a Builder>"
    ```
 
-Builders get the new version with `npm install -D revelio-ai@latest`, then `npx revelio-ai init`, in the folder with the app's `package.json`. `init` copies the new skills.
+Builders get the new version with `npm init revelio`, or `npm install -D revelio-ai@latest` then `npx revelio-ai init`, in the folder with the app's `package.json`. `init` copies the new skills.
 
 ## If something goes wrong
 
@@ -43,7 +43,7 @@ Builders get the new version with `npm install -D revelio-ai@latest`, then `npx 
 
 ## `create-revelio`
 
-`packages/create-revelio/` is the small package behind `npm init revelio`. It only runs `npx revelio-ai init`, so a Revelio release does not need a new version of it. It is not part of the `Release` workflow and has its own version, starting at `0.1.0`.
+`packages/create-revelio/` is the small package behind `npm init revelio`. It only adds the latest `revelio-ai` to the app, then runs `npx revelio-ai init`, so a Revelio release does not need a new version of it. It is not part of the `Release` workflow and has its own version, starting at `0.1.0`.
 
 Publish it by hand, only when `packages/create-revelio/` changes:
 

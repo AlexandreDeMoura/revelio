@@ -1,7 +1,7 @@
 {
   "name": "create-revelio",
-  "version": "0.1.0",
-  "description": "Installs Revelio in your app: npm init revelio runs npx revelio-ai init.",
+  "version": "0.2.0",
+  "description": "Installs Revelio in your app: npm init revelio adds revelio-ai to it, then runs npx revelio-ai init.",
   "keywords": [
     "revelio",
     "revelio-ai",

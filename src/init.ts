@@ -197,7 +197,8 @@ function folderWithThePackage(repoRoot: string, from: string): string {
   }
   throw new Error(
     `${packageName} is not installed here, and Revelio installs in the app: ` +
-      `run \`npm install -D ${packageName}\`, then \`npx ${packageName} init\` from the same folder. Nothing was written.`,
+      `run \`npm install -D ${packageName}\`, then \`npx ${packageName} init\` from the same folder, ` +
+      "or `npm init revelio`, which does both. Nothing was written.",
   );
 }
 

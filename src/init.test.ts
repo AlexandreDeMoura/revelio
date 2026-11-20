@@ -157,7 +157,8 @@ test("init refuses, and writes nothing, where the package is not installed", () 
   expect(run.status).toBe(1);
   expect(run.stderr).toBe(
     "revelio-ai is not installed here, and Revelio installs in the app: " +
-      "run `npm install -D revelio-ai`, then `npx revelio-ai init` from the same folder. Nothing was written.\n",
+      "run `npm install -D revelio-ai`, then `npx revelio-ai init` from the same folder, or `npm init revelio`, which does both. " +
+      "Nothing was written.\n",
   );
   expect(fs.existsSync(path.join(root, ".claude"))).toBe(false);
   expect(fs.existsSync(path.join(root, "CLAUDE.md"))).toBe(false);
