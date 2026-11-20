@@ -63,7 +63,9 @@ Each milestone is one commit that the Builder can review alone, with its tests w
 
 ### 0. Prerequisite, outside this plan: the knowledge base in git
 
-The Builder plans to remove the Private install, so that the knowledge base is always committed. Milestone 5 needs this, and the other milestones do not. That change also changes `GLOSSARY.md` (Private install, Shared install, History store), `src/init.ts`, the skills and `CLAUDE.local.md`. It is its own plan, on its own card: [#16](https://github.com/AlexandreDeMoura/revelio/issues/16).
+The Builder plans to remove the Private install, so that the knowledge base is always committed. Milestone 5 needs this, and the other milestones do not. That change also changes `GLOSSARY.md` (Private install, Shared install, History store), `src/init.ts`, the skills and `CLAUDE.local.md`. It is its own plan, [`docs/plans/knowledge-base-in-git.md`](../../../../docs/plans/knowledge-base-in-git.md), on its own card: [#16](https://github.com/AlexandreDeMoura/revelio/issues/16).
+
+With it, `git revelio` goes away. Where this plan says `git revelio check` or `git revelio progress`, read `npx revelio-ai check` or `npx revelio-ai progress`, run in the folder that has the package.
 
 ### 1. Remove what goes away
 
