@@ -7,6 +7,7 @@ Revelio keeps a plain-words map of an app (its Flows, Areas and Parts) true to t
 - **Tests**: run `npm test`. It builds first, then runs vitest. Write the test before the change.
 - **Releases**: before preparing a release or changing a version, read and follow `docs/releasing.md`. Keep the Claude Code plugin version in `.claude-plugin/plugin.json` equal to the npm package version in `package.json` and `package-lock.json`.
 - **Dogfooding**: `.revelio/`, `.claude/skills/` and `knowledge-base/` may be a private install of released Revelio on this repo (see `docs/dogfooding.md`). Change skills in `skills/`, never in `.claude/skills/`.
+- **Plans**: each effort is a card on [project 7](https://github.com/users/AlexandreDeMoura/projects/7): an issue with a checklist of milestones. Its plan, when it has one, is in the `docs/plans/` beside the code it changes. When you finish a milestone of a card, tick it.
 - **Packages**: pin exact versions. Ask before adding one.
 - **Commits**: give the Builder a suggested commit message; leave staging and committing to the Builder.
 
