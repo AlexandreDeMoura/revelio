@@ -15,15 +15,7 @@ The set of files, kept alongside an app's code, that describe the app well enoug
 One saved copy of the whole **Knowledge base**, with the app commit it describes and the moment it was saved.
 
 **History store**:
-Where one **Builder**'s **Knowledge base versions** of one app are kept, on their computer, next to their **QA Results**. Like QA Results, it is not part of the Knowledge base and is never committed to the app.
-
-**Private install**:
-The library added to an app for one **Builder** only: nothing it adds is committed, so teammates and their agents never see it, and the **Knowledge base** stays on that Builder's computer. The default way to install.
-_Avoid_: Local install, personal setup
-
-**Shared install**:
-The library added to an app for the whole team: what it adds, the **Knowledge base** included, is committed with the code.
-_Avoid_: Public install, team install
+Where one **Builder**'s **Knowledge base versions** of one app that are not in its commits are kept, on their computer, next to their **QA Results**: the one saved at the end of each agent session, and those saved before the **Knowledge base** was committed. Like QA Results, it is not part of the Knowledge base and is never committed to the app.
 
 **Area**:
 A coarse region of the app that groups **Flows**. A **Flow** belongs to exactly one Area and can be moved to another: it is the same **Flow**, since what identifies a **Flow** is its name, unique across the app, not its Area. Areas do not nest.
