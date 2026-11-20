@@ -7,7 +7,7 @@ import readline from "node:readline/promises";
 import { parseArgs } from "node:util";
 import { runDeterministicCheck } from "./deterministic-check.js";
 import { offerToMap } from "./first-run.js";
-import { initPrivate, initShared, uninstall } from "./init.js";
+import { init, uninstall } from "./init.js";
 import { qaResultsFile } from "./qa-results.js";
 import { problemLines, stopHook } from "./stop-hook.js";
 import { startView } from "./view.js";
@@ -36,14 +36,6 @@ async function view(args: string[]): Promise<void> {
   console.log(`Knowledge base web view: ${url}`);
 }
 
-// What a private install puts in `.revelio/`: this very version from npm,
-// unless `REVELIO_PACKAGE` names another source, such as a tarball tried
-// before it is published.
-function packageSpec(): string {
-  const { version } = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
-  return process.env.REVELIO_PACKAGE || `revelio-ai@${version}`;
-}
-
 // Asks in the terminal, when init has one on both sides.
 async function ask(question: string): Promise<string> {
   const terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -63,45 +55,22 @@ function onPath(command: string): boolean {
     .some((folder) => folder && names.some((name) => fs.existsSync(path.join(folder, name))));
 }
 
+// `--shared` is how Revelio up to 0.3.0 asked for what `init` now always does.
 async function install(args: string[]): Promise<number> {
-  const { values } = parseArgs({ args, options: { shared: { type: "boolean", default: false } } });
+  parseArgs({ args, options: { shared: { type: "boolean", default: false } } });
   try {
     const root = repoRoot();
-    const installed = values.shared ? initShared(root, process.cwd(), os.homedir()) : initPrivate(root, packageSpec(), os.homedir());
-    if (installed.mode === "team-has-it") {
-      console.log("Revelio is already installed for this repo's team. Nothing to do.");
-      return 0;
-    }
-    if (installed.mode === "team-has-fledgy") {
-      console.log(
-        "This repo's team has Fledgy, which is now Revelio. Nothing was written.\n" +
-          "To move the team over, in the folder whose package.json has fledgy, run:\n" +
-          "  npm uninstall fledgy && npm install -D revelio-ai && npx revelio-ai init --shared\n" +
-          "then commit what changed.",
-      );
-      return 0;
-    }
-    console.log(
-      installed.mode === "private"
-        ? "Revelio is installed for you only: git sees none of what it added."
-        : "Revelio is installed for this repo's team: commit what it added.",
-    );
+    const installed = init(root, process.cwd(), os.homedir());
+    console.log("Revelio is installed in this app: commit what it added, and knowledge-base/ with the code once it is written.");
     console.log(`  ${installed.wrote.join("  ")}`);
-    if (installed.mode === "private" && installed.fromFledgy) {
-      console.log("Fledgy is now Revelio: your Fledgy install is replaced, so type git revelio where you typed git fledgy.");
+    if (installed.fromFledgy) {
+      console.log("Fledgy is now Revelio: your Fledgy install is replaced, so type npx revelio-ai where you typed git fledgy.");
     }
-    if (installed.mode === "shared" && installed.privateRemoved) {
-      console.log("Your private install is gone, and knowledge-base/ is no longer hidden from git, so it can be committed.");
+    if (installed.privateRemoved) {
+      console.log("Your private install is gone, and git now sees knowledge-base/: commit it with the rest.");
     }
-    if (installed.mode === "shared" && installed.fledgyPackageIn !== undefined) {
-      console.log(fledgyStillIn(installed.fledgyPackageIn));
-    }
-    // A private install's binary is not where `npx` looks: the Builder runs
-    // it through its git alias.
-    const view =
-      installed.mode === "private"
-        ? "git revelio view"
-        : `npx revelio-ai view${installed.installedIn ? ` in ${installed.installedIn.split(path.sep).join("/")}/` : ""}`;
+    if (installed.fledgyPackageIn !== undefined) console.log(fledgyStillIn(installed.fledgyPackageIn));
+    const view = `npx revelio-ai view${installed.installedIn ? ` in ${installed.installedIn.split(path.sep).join("/")}/` : ""}`;
     await offerToMap({
       where: fs.realpathSync(process.cwd()) === fs.realpathSync(root) ? "here" : "at the repo root",
       view,
@@ -123,7 +92,7 @@ async function install(args: string[]): Promise<number> {
 function remove(): number {
   try {
     const root = repoRoot();
-    const { removed, knowledgeBase, sharedPackageIn, fledgyPackageIn, commandKeptFor } = uninstall(root, process.cwd(), os.homedir());
+    const { removed, knowledgeBase, packageIn, fledgyPackageIn, commandKeptFor } = uninstall(root, process.cwd(), os.homedir());
     console.log(removed.length === 0 ? "Revelio was not installed here. Nothing to do." : "Revelio is removed.");
     if (removed.length > 0) console.log(`  ${removed.join("  ")}`);
     if (commandKeptFor) console.log(`git revelio is kept: the private install in ${commandKeptFor} uses it.`);
@@ -135,8 +104,8 @@ function remove(): number {
     if (results && fs.existsSync(results)) {
       console.log(`Your QA Results are kept in ${path.dirname(results)}. To delete them: rm -rf "${path.dirname(results)}"`);
     }
-    if (sharedPackageIn !== undefined) {
-      console.log(`Revelio is still in the app's package.json: run \`npm uninstall revelio-ai\`${sharedPackageIn ? ` in ${sharedPackageIn}/` : ""}.`);
+    if (packageIn !== undefined) {
+      console.log(`Revelio is still in the app's package.json: run \`npm uninstall revelio-ai\`${packageIn ? ` in ${packageIn}/` : ""}.`);
     }
     if (fledgyPackageIn !== undefined) console.log(fledgyStillIn(fledgyPackageIn));
     return 0;
@@ -172,7 +141,7 @@ if (command === "check") {
   await answerStop();
 } else {
   console.error(
-    "Usage: revelio init [--shared]\n       revelio uninstall\n       revelio check\n       revelio view [--port <number>]",
+    "Usage: revelio init\n       revelio uninstall\n       revelio check\n       revelio view [--port <number>]",
   );
   process.exitCode = 2;
 }

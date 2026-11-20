@@ -6,34 +6,29 @@ import { appDataDirectory } from "./qa-results.js";
 // The npm package, as npm and `npx` name it.
 const packageName = "revelio-ai";
 // The command the package puts on the path, which also names everything init
-// writes: the git alias, the Stop hook's binary, the markers.
+// writes: the Stop hook's binary, the markers.
 const command = "revelio";
 // The skills are plain files kept beside `src` and `dist`, where a Claude Code
 // plugin has them.
 const skills = new URL("../skills/", import.meta.url);
 // Ends the instruction line, and finds it again on the next run.
 const marker = `<!-- ${command} -->`;
-// Where a private install puts the library, at the git root.
+
+// Up to 0.3.0, `init` made a private install, for one Builder only: the
+// library in `.revelio/` at the git root, its Stop hook in the local settings,
+// its line in `CLAUDE.local.md`, and all of it hidden from git by the local
+// exclude, the knowledge base too. A `git revelio` alias in the repo's local
+// config ran that copy. Init and uninstall take such an install over, so
+// nothing else reads these.
 const privateFolder = ".revelio";
-// The `git revelio` command of a private install: a git alias in the repo's
-// local config. Git runs it at the root of the checkout it is typed in, so it
-// runs that checkout's own copy, then goes back to the folder the Builder was
-// in and passes on their arguments and the exit code. Without the copy it
-// stops: it never downloads Revelio or runs another copy.
 const aliasKey = `alias.${command}`;
-const alias =
-  `!f() { cli="$PWD/${privateFolder}/node_modules/.bin/${command}"; ` +
-  `[ -x "$cli" ] || { printf '%s\\n' ` +
-  `"Revelio is not installed in this checkout: ${privateFolder}/ is missing, so nothing was run." ` +
-  `"To install it again, run: npx ${packageName} init" >&2; exit 1; }; ` +
-  `cd "./$GIT_PREFIX" && exec "$cli" "$@"; }; f`;
 // Revelio's note, in the same config, of the alias it wrote. The alias is
-// Revelio's only while the two match, so one the Builder had before init, or
-// changed since, is never replaced or removed.
+// Revelio's only while the two match, so one the Builder had, or changed
+// since, is never removed.
 const ownedKey = `${command}.alias`;
 
 // What Fledgy, Revelio's former name, wrote. Init and uninstall take a Fledgy
-// install over once, so nothing else reads these.
+// install over, so nothing else reads these.
 const fledgy = {
   folder: ".fledgy",
   marker: "<!-- fledgy -->",
@@ -44,82 +39,53 @@ const fledgy = {
   blockEnd: "# end fledgy",
 };
 
-// `fromFledgy` says a private Fledgy install was taken over. `fledgyPackageIn`
-// is where the app still depends on Fledgy, from the git root.
-export type Installed =
-  | { mode: "private"; wrote: string[]; fromFledgy: boolean }
-  | { mode: "shared"; wrote: string[]; installedIn: string; privateRemoved: boolean; fledgyPackageIn: string | undefined }
-  | { mode: "team-has-it" }
-  | { mode: "team-has-fledgy" };
+// `installedIn` is the folder with the package, from the git root.
+// `privateRemoved` says a private install was taken over, and `fromFledgy`
+// that a private Fledgy install was. `fledgyPackageIn` is where the app still
+// depends on Fledgy, from the git root.
+export type Installed = {
+  wrote: string[];
+  installedIn: string;
+  privateRemoved: boolean;
+  fromFledgy: boolean;
+  fledgyPackageIn: string | undefined;
+};
 
-// The private install: everything in the app's checkout and hidden from git
-// by the local exclude, so nothing reaches the team. `packageSpec` is what npm
-// installs into `.revelio/`. Safe to run again: it refreshes what it wrote
-// before, which is how an upgrade happens, from Fledgy too. `home` is the
-// Builder's home folder.
-export function initPrivate(repoRoot: string, packageSpec: string, home: string): Installed {
-  const team = teamHas(repoRoot);
-  if (team) return { mode: team === "fledgy" ? "team-has-fledgy" : "team-has-it" };
-  const tracked = git(repoRoot, "ls-files", "--", ...privatePaths().filter((p) => p !== "knowledge-base/"));
-  if (tracked) {
-    const first = tracked.split("\n")[0]!;
-    throw new Error(`${first} is committed in this repo, and a private install would replace it. Nothing was written.`);
-  }
-  refuseAnotherAlias(repoRoot);
-  // Read before anything is written: it is the one file that can refuse.
-  const settings = readSettings(repoRoot, ".claude/settings.local.json");
-  installLibrary(repoRoot, packageSpec);
-  const left = leaveFledgy(repoRoot, home);
-  hideFromGit(repoRoot, privatePaths());
-  setAlias(repoRoot);
-  copySkills(repoRoot);
-  writeSettings(settings, withStopHook(settings.content, privateFolder));
-  writeInstruction(
-    repoRoot,
-    "CLAUDE.local.md",
-    instruction(`\`git ${command} check\``) +
-      " `knowledge-base/` is hidden from git: open its files by path, since search won't find them, and never commit them.",
-  );
-  return {
-    mode: "private",
-    wrote: [`${privateFolder}/`, ".claude/skills/", ".claude/settings.local.json", "CLAUDE.local.md"],
-    fromFledgy: left.folder || left.command,
-  };
-}
-
-// The shared install: into the host's `.claude/` and `CLAUDE.md`, at the git
-// root, for the team to commit. `from` is the folder the command was run in.
-// It replaces a private install, and stops hiding `knowledge-base/` so it can
-// be committed.
-export function initShared(repoRoot: string, from: string, home: string): Installed {
+// Installs Revelio in the app: into the host's `.claude/` and `CLAUDE.md`, at
+// the git root, for the team to commit with the knowledge base. `from` is the
+// folder the command was run in, and `home` the Builder's home folder. It
+// takes a private install over, and stops hiding `knowledge-base/` so that it
+// can be committed. Safe to run again: it refreshes what it wrote before,
+// which is how an upgrade happens, from Fledgy too.
+export function init(repoRoot: string, from: string, home: string): Installed {
   const installedIn = path.relative(repoRoot, folderWithThePackage(repoRoot, from));
   const settings = readSettings(repoRoot, ".claude/settings.json");
   // The local exclude is shared by every checkout of the repo: it cannot stop
-  // hiding the shared install here and keep hiding another private one.
+  // hiding the knowledge base here and keep hiding another private install.
   const [other] = [...otherPrivateInstalls(repoRoot), ...otherCheckoutsWith(repoRoot, fledgy.folder)];
   if (other) {
     throw new Error(
       `Another checkout of this repo has a private install, in ${other}. ` +
-        "The two share what git hides, so a shared install here would show its files to git. Nothing was written. " +
-        `To go on, first run git ${command} uninstall in that checkout.`,
+        "The two share what git hides, so installing here would show its files to git. Nothing was written. " +
+        `To go on, first run npx ${packageName} uninstall in that checkout.`,
     );
   }
-  leaveFledgy(repoRoot, home);
+  const left = leaveFledgy(repoRoot, home);
   const privateRemoved = removePrivate(repoRoot, { keepHidden: false }).had;
   copySkills(repoRoot);
   writeSettings(settings, withStopHook(settings.content, installedIn));
   const where = installedIn ? `in \`${posix(installedIn)}/\`` : "at the repo root";
   writeInstruction(repoRoot, "CLAUDE.md", instruction(`\`npx ${packageName} check\` ${where}`));
   return {
-    mode: "shared",
     wrote: [".claude/skills/", ".claude/settings.json", "CLAUDE.md"],
     installedIn,
     privateRemoved,
+    fromFledgy: left.folder || left.command,
     fledgyPackageIn: dependencyIn(repoRoot, from, "fledgy"),
   };
 }
 
-// `sharedPackageIn` is where the app's own dependency on Revelio was found,
+// `packageIn` is where the app's dependency on Revelio was found,
 // and `fledgyPackageIn` where one on Fledgy was, from the git root, which
 // the Builder removes with npm.
 // `commandKeptFor` is another checkout whose private install still needs the
@@ -127,16 +93,17 @@ export function initShared(repoRoot: string, from: string, home: string): Instal
 export type Uninstalled = {
   removed: string[];
   knowledgeBase: boolean;
-  sharedPackageIn: string | undefined;
+  packageIn: string | undefined;
   fledgyPackageIn: string | undefined;
   commandKeptFor: string | undefined;
 };
 
-// Removes what either install added. The knowledge base is never deleted, and
-// whatever is left of a private install stays hidden from git. `from` is the
-// folder the command was run in, and `home` the Builder's home folder.
+// Removes what the install added, and a private install. The knowledge base is
+// never deleted, and whatever is left of a private install stays hidden from
+// git. `from` is the folder the command was run in, and `home` the Builder's
+// home folder.
 export function uninstall(repoRoot: string, from: string, home: string): Uninstalled {
-  const shared = readSettings(repoRoot, ".claude/settings.json");
+  const settings = readSettings(repoRoot, ".claude/settings.json");
   const removed: string[] = [];
   if (removeSkills(repoRoot)) removed.push(".claude/skills/");
   const left = leaveFledgy(repoRoot, home);
@@ -145,7 +112,7 @@ export function uninstall(repoRoot: string, from: string, home: string): Uninsta
   const local = removePrivate(repoRoot, { keepHidden: true });
   if (local.had) removed.push(`${privateFolder}/`, ".claude/settings.local.json", "CLAUDE.local.md");
   if (local.command) removed.push(`git ${command}`);
-  if (writeSettings(shared, withStopHook(shared.content, undefined))) removed.push(".claude/settings.json");
+  if (writeSettings(settings, withStopHook(settings.content, undefined))) removed.push(".claude/settings.json");
   if (removeInstruction(repoRoot, "CLAUDE.md")) removed.push("CLAUDE.md");
   // A folder left empty is one the install made.
   for (const folder of [".claude/skills", ".claude"]) {
@@ -155,7 +122,7 @@ export function uninstall(repoRoot: string, from: string, home: string): Uninsta
   return {
     removed,
     knowledgeBase: fs.existsSync(path.join(repoRoot, "knowledge-base")),
-    sharedPackageIn: dependencyIn(repoRoot, from, packageName),
+    packageIn: dependencyIn(repoRoot, from, packageName),
     fledgyPackageIn: dependencyIn(repoRoot, from, "fledgy"),
     commandKeptFor: local.commandKeptFor,
   };
@@ -175,24 +142,6 @@ function instruction(check: string): string {
   );
 }
 
-// A shared install is there once its line is in `CLAUDE.md` or its hook in
-// the shared settings, committed or about to be. Says whether it is Revelio's
-// or still Fledgy's.
-function teamHas(repoRoot: string): "revelio" | "fledgy" | undefined {
-  const claudeMd = path.join(repoRoot, "CLAUDE.md");
-  const lines = fs.existsSync(claudeMd) ? fs.readFileSync(claudeMd, "utf8") : "";
-  const settingsFile = path.join(repoRoot, ".claude", "settings.json");
-  let hooks: Hook[] = [];
-  try {
-    if (fs.existsSync(settingsFile)) hooks = stopHooks(JSON.parse(fs.readFileSync(settingsFile, "utf8")) as Settings);
-  } catch {
-    // Unreadable settings are no install.
-  }
-  if (lines.includes(marker) || hooks.some((hook) => hook.command?.endsWith(hookEnd))) return "revelio";
-  if (lines.includes(fledgy.marker) || hooks.some((hook) => hook.command?.endsWith(fledgy.hookEnd))) return "fledgy";
-  return undefined;
-}
-
 // Every path a private install hides, from the git root.
 function privatePaths(): string[] {
   return [
@@ -202,22 +151,6 @@ function privatePaths(): string[] {
     "CLAUDE.local.md",
     "knowledge-base/",
   ];
-}
-
-// The library pinned to the version that ran `init`, never in the app's
-// `package.json`.
-function installLibrary(repoRoot: string, packageSpec: string) {
-  const into = path.join(repoRoot, privateFolder);
-  const first = !fs.existsSync(into);
-  const run = spawnSync(
-    "npm",
-    ["install", "--prefix", into, "--save-exact", "--no-audit", "--no-fund", "--loglevel=error", packageSpec],
-    { encoding: "utf8", shell: process.platform === "win32" },
-  );
-  if (run.status !== 0) {
-    if (first) fs.rmSync(into, { recursive: true, force: true });
-    throw new Error(`npm could not install ${packageSpec} into ${privateFolder}/:\n${run.stderr || run.error?.message}`);
-  }
 }
 
 // Removes the private install's own pieces. With `keepHidden`, what is left
@@ -250,12 +183,20 @@ function folderWithPackage(repoRoot: string, from: string, name: string): string
   }
 }
 
+// An app that still depends on Fledgy is told how to move over.
 function folderWithThePackage(repoRoot: string, from: string): string {
   const folder = folderWithPackage(repoRoot, from, packageName);
   if (folder !== undefined) return folder;
+  if (folderWithPackage(repoRoot, from, "fledgy") !== undefined) {
+    throw new Error(
+      "This app depends on Fledgy, which is now Revelio. Nothing was written. To move over, run:\n" +
+        `  npm uninstall fledgy && npm install -D ${packageName} && npx ${packageName} init\n` +
+        "then commit what changed.",
+    );
+  }
   throw new Error(
-    `${packageName} is not installed here. A shared install needs it in the app: ` +
-      `run \`npm install -D ${packageName}\`, then \`npx ${packageName} init --shared\` from the same folder.`,
+    `${packageName} is not installed here, and Revelio installs in the app: ` +
+      `run \`npm install -D ${packageName}\`, then \`npx ${packageName} init\` from the same folder. Nothing was written.`,
   );
 }
 
@@ -404,29 +345,6 @@ function excludeFile(repoRoot: string, start: string, end: string) {
   const close = at >= 0 ? before.indexOf(end, at) : -1;
   if (close < 0) return { file, before, at: -1, after: -1 };
   return { file, before, at, after: before.indexOf("\n", close) < 0 ? before.length : before.indexOf("\n", close) + 1 };
-}
-
-// A `revelio` alias that is not the one a private install needs, wherever git
-// finds it, is the Builder's: init stops before writing anything. One an
-// older Revelio wrote is replaced.
-function refuseAnotherAlias(repoRoot: string) {
-  const found = gitConfig(repoRoot, "--show-scope", "--get", aliasKey);
-  if (found === undefined) return;
-  const [scope, value] = found.split(/\t(.*)/s) as [string, string];
-  if (value === alias) return;
-  if (scope === "local" && value === gitConfig(repoRoot, "--local", "--get", ownedKey)) return;
-  throw new Error(
-    `This repo already has a git alias named ${command} (${aliasKey} = ${value}, in its ${scope} git config), ` +
-      `and a private install needs that name for its git ${command} command. Nothing was written. ` +
-      `To install Revelio, remove that alias first: git config --${scope} --unset ${aliasKey}`,
-  );
-}
-
-// Writes the alias, and notes it as Revelio's, unless git already finds it.
-function setAlias(repoRoot: string) {
-  if (gitConfig(repoRoot, "--get", aliasKey) === alias) return;
-  git(repoRoot, "config", "--local", aliasKey, alias);
-  git(repoRoot, "config", "--local", ownedKey, alias);
 }
 
 // Removes the alias noted under `owned` when it is still the one written

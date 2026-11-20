@@ -67,8 +67,8 @@ export async function changeReader(repoRoot: string, home: string) {
     const beforeFirst = ancestorKey && history.has(oldest!.appCommit) ? ancestors.get(ancestorKey) : undefined;
 
     // Selection is by exact app commit, then save time, never ancestry. Only
-    // the before-first flag uses ancestry. In Private installs a branch switch
-    // can select a version saved on another branch (a known limit).
+    // the before-first flag uses ancestry. A branch switch can select a version
+    // the History store saved on another branch (a known limit).
     const pick = (commit: Commit) => {
       const exact = versions.filter(version => version.appCommit === commit.sha).at(-1);
       if (exact) return { version: exact, anchorsFrom: "exact" as const };

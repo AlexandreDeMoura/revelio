@@ -36,8 +36,9 @@ export function saveKnowledgeBaseVersion(repoRoot: string, home: string): void {
     const ref = `refs/checkouts/${createHash("sha256").update(checkout).digest("hex")}`;
     let previous: string | undefined;
     try { previous = git("rev-parse", "--verify", ref); } catch { /* first session in this checkout */ }
-    // A fresh temporary index captures deletions too, and force includes the
-    // Private install's excluded files. Only the store's config/index is used.
+    // A fresh temporary index captures deletions too, and force includes files
+    // git ignores, as a private install's knowledge base was. Only the store's
+    // config/index is used.
     git("read-tree", "--empty");
     if (fs.existsSync(knowledgeBase) && fs.readdirSync(knowledgeBase, { recursive: true, withFileTypes: true }).some(entry => !entry.isDirectory())) {
       git(`--work-tree=${checkout}`, "-c", "core.bare=false", "add", "--force", "--all", "--", "knowledge-base");
@@ -56,8 +57,8 @@ export function saveKnowledgeBaseVersion(repoRoot: string, home: string): void {
   }
 }
 
-// All checkouts contribute versions. Shared installs also contribute every
-// Knowledge base commit reachable from HEAD, including teammates' changes.
+// All checkouts contribute versions. Every Knowledge base commit reachable
+// from HEAD is one too, including teammates' changes.
 const versionLists = new Map<string, { key: string; versions: KnowledgeBaseVersion[] }>();
 function refsKey(store: string): string {
   const refs = path.join(store, "refs");

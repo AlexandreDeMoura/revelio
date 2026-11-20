@@ -10,12 +10,6 @@ import { commitAll, git, hostRepo } from "./testing/host-repo.js";
 
 const cli = fileURLToPath(new URL("../dist/cli.js", import.meta.url));
 
-// A stand-in for the published package, which npm installs without the network.
-const fakePackage = hostRepo({
-  "package.json": JSON.stringify({ name: "revelio-ai", version: "0.0.0-test", bin: { revelio: "cli.js" } }),
-  "cli.js": "#!/usr/bin/env node\n",
-});
-
 // The Builder's machine: their own git settings and home folder, kept apart
 // from this one's.
 function machine(): NodeJS.ProcessEnv {
@@ -24,7 +18,7 @@ function machine(): NodeJS.ProcessEnv {
 }
 
 function revelio(env: NodeJS.ProcessEnv, from: string, ...args: string[]) {
-  return spawnSync("node", [cli, ...args], { cwd: from, encoding: "utf8", env: { ...env, REVELIO_PACKAGE: fakePackage } });
+  return spawnSync("node", [cli, ...args], { cwd: from, encoding: "utf8", env });
 }
 
 function setting(env: NodeJS.ProcessEnv, root: string, ...args: string[]): string | undefined {
@@ -46,9 +40,10 @@ function write(root: string, file: string, content: string) {
   fs.writeFileSync(path.join(root, file), content);
 }
 
-// `name` sets the first commit apart from another app's.
+// An app with Revelio installed at its root, as `init` needs it. `name` sets
+// the first commit apart from another app's.
 function app(name = "Auxilia"): string {
-  const root = hostRepo({ "README.md": `# ${name}\n`, ".gitignore": "node_modules/\n" });
+  const root = hostRepo({ "README.md": `# ${name}\n`, ".gitignore": "node_modules/\n", "node_modules/revelio-ai/package.json": "{}" });
   commitAll(root, "the app");
   return root;
 }
@@ -97,7 +92,7 @@ function fledgyPrivate(env: NodeJS.ProcessEnv, root: string, { shared = true } =
   gitConfig(env, root, "--local", "fledgy.alias", fledgyAlias);
 }
 
-test("init takes a private Fledgy install over: one Stop hook, one instruction line, git revelio for git fledgy, none of it seen by git", () => {
+test("init takes a private Fledgy install over: the agent is checked once, and git sees the knowledge base", () => {
   const env = machine();
   const root = app();
   fledgyPrivate(env, root);
@@ -107,20 +102,21 @@ test("init takes a private Fledgy install over: one Stop hook, one instruction l
 
   expect(run.stderr).toBe("");
   expect(run.status).toBe(0);
-  expect(run.stdout).toContain("Fledgy is now Revelio: your Fledgy install is replaced, so type git revelio where you typed git fledgy.\n");
+  expect(run.stdout).toContain("Fledgy is now Revelio: your Fledgy install is replaced, so type npx revelio-ai where you typed git fledgy.\n");
+  expect(run.stdout).toContain("Your private install is gone");
   expect(fs.existsSync(path.join(root, ".fledgy"))).toBe(false);
-  expect(fs.existsSync(path.join(root, ".revelio/node_modules/.bin/revelio"))).toBe(true);
+  expect(fs.existsSync(path.join(root, ".revelio"))).toBe(false);
   expect(read(root, ".claude/skills/map-the-app/SKILL.md")).toMatch(/^---\nname: map-the-app\n/);
-  expect(JSON.parse(read(root, ".claude/settings.local.json"))).toEqual({
-    permissions: { allow: ["Bash(ls)"] },
-    hooks: { Stop: [{ hooks: [revelioHook(".revelio/")] }] },
-  });
-  expect(read(root, "CLAUDE.local.md")).toMatch(/^Answer in French\.\n\n`knowledge-base\/` describes .*`git revelio check`.* <!-- revelio -->\n$/);
+  expect(JSON.parse(read(root, ".claude/settings.local.json"))).toEqual({ permissions: { allow: ["Bash(ls)"] } });
+  expect(read(root, "CLAUDE.local.md")).toBe("Answer in French.\n");
+  expect(JSON.parse(read(root, ".claude/settings.json"))).toEqual({ hooks: { Stop: [{ hooks: [revelioHook("")] }] } });
+  expect(read(root, "CLAUDE.md")).toMatch(/^`knowledge-base\/` describes .*`npx revelio-ai check` at the repo root.* <!-- revelio -->\n$/);
   expect(setting(env, root, "--get", "alias.fledgy")).toBeUndefined();
   expect(setting(env, root, "--local", "--get-regexp", "^fledgy\\.")).toBeUndefined();
-  expect(setting(env, root, "--get", "alias.revelio")).toBeDefined();
+  expect(setting(env, root, "--get", "alias.revelio")).toBeUndefined();
   expect(read(root, ".git/info/exclude")).not.toContain("fledgy");
-  expect(gitSees(env, root)).toBe("");
+  expect(read(root, ".git/info/exclude")).not.toContain("revelio");
+  expect(gitSees(env, root)).toContain("?? knowledge-base/areas.yaml\n");
 });
 
 test("init moves the Builder's history and QA Results out of Fledgy's folder, but never over Revelio's", () => {
@@ -188,28 +184,27 @@ test("uninstall removes a private Fledgy install, and keeps the knowledge base h
   expect(gitSees(env, root)).toBe("");
 });
 
-test("init does nothing in a repo whose team has Fledgy, and says how to move the team over", () => {
+test("init in an app that depends on Fledgy, not Revelio, writes nothing and says how to move over", () => {
   const env = machine();
   const root = hostRepo({
+    "web/node_modules/fledgy/package.json": "{}",
     "CLAUDE.md": `# Auxilia\n\n${fledgyLine("`npx fledgy check` in `web/`")}\n`,
     ".claude/settings.json": JSON.stringify({ hooks: { Stop: [{ hooks: [fledgyHook("web/")] }] } }),
   });
   commitAll(root, "the team installs Fledgy");
 
-  const run = revelio(env, root, "init");
+  const run = revelio(env, path.join(root, "web"), "init");
 
-  expect(run.status).toBe(0);
-  expect(run.stdout).toBe(
-    "This repo's team has Fledgy, which is now Revelio. Nothing was written.\n" +
-      "To move the team over, in the folder whose package.json has fledgy, run:\n" +
-      "  npm uninstall fledgy && npm install -D revelio-ai && npx revelio-ai init --shared\n" +
+  expect(run.status).toBe(1);
+  expect(run.stderr).toBe(
+    "This app depends on Fledgy, which is now Revelio. Nothing was written. To move over, run:\n" +
+      "  npm uninstall fledgy && npm install -D revelio-ai && npx revelio-ai init\n" +
       "then commit what changed.\n",
   );
-  expect(fs.existsSync(path.join(root, ".revelio"))).toBe(false);
   expect(gitSees(env, root)).toBe("");
 });
 
-test("init --shared replaces the team's Fledgy hook and line, and says to remove fledgy from the app", () => {
+test("init replaces the team's Fledgy hook and line, and says to remove fledgy from the app", () => {
   const env = machine();
   const notify = { hooks: [{ type: "command", command: "say done" }] };
   const root = hostRepo({
@@ -220,7 +215,7 @@ test("init --shared replaces the team's Fledgy hook and line, and says to remove
   });
   commitAll(root, "the team installs Fledgy");
 
-  const run = revelio(env, path.join(root, "web"), "init", "--shared");
+  const run = revelio(env, path.join(root, "web"), "init");
 
   expect(run.stderr).toBe("");
   expect(run.status).toBe(0);
@@ -229,47 +224,27 @@ test("init --shared replaces the team's Fledgy hook and line, and says to remove
   expect(read(root, "CLAUDE.md")).toMatch(/^# Auxilia\n\n`knowledge-base\/` describes .*`npx revelio-ai check` in `web\/`.* <!-- revelio -->\n\nUse pnpm\.\n$/);
 });
 
-test("init --shared takes over the Builder's private Fledgy install, so the agent is checked once", () => {
-  const env = machine();
-  const root = hostRepo({ "web/node_modules/revelio-ai/package.json": "{}" });
-  commitAll(root, "the app");
-  fledgyPrivate(env, root);
-
-  const run = revelio(env, path.join(root, "web"), "init", "--shared");
-
-  expect(run.status).toBe(0);
-  expect(run.stdout).toContain("Your private install is gone");
-  expect(fs.existsSync(path.join(root, ".fledgy"))).toBe(false);
-  expect(JSON.parse(read(root, ".claude/settings.local.json"))).toEqual({ permissions: { allow: ["Bash(ls)"] } });
-  expect(read(root, "CLAUDE.local.md")).toBe("Answer in French.\n");
-  expect(JSON.parse(read(root, ".claude/settings.json"))).toEqual({ hooks: { Stop: [{ hooks: [revelioHook("web/")] }] } });
-  expect(setting(env, root, "--get", "alias.fledgy")).toBeUndefined();
-  expect(read(root, ".git/info/exclude")).not.toContain("fledgy");
-  expect(gitSees(env, root)).toContain("?? knowledge-base/areas.yaml");
-});
-
-test("while another checkout still has a Fledgy install, init leaves it working and hidden from git, and the last one takes over what they share", () => {
+test("while another checkout has a Fledgy install, init refuses and leaves it working and hidden from git, then goes on once that one is uninstalled", () => {
   const env = machine();
   const root = app();
   const worktree = path.join(hostRepo({}), "the feature");
   expect(spawnSync("git", ["worktree", "add", "--quiet", "-b", "feature", worktree], { cwd: root, env }).status).toBe(0);
   fledgyPrivate(env, root);
   fledgyPrivate(env, worktree, { shared: false });
-  write(root, "web/node_modules/revelio-ai/package.json", "{}");
 
-  expect(revelio(env, root, "init").status).toBe(0);
-  const shared = revelio(env, path.join(root, "web"), "init", "--shared");
+  const refused = revelio(env, root, "init");
 
+  expect(refused.status).toBe(1);
+  expect(refused.stderr).toContain(`Another checkout of this repo has a private install, in ${fs.realpathSync(worktree)}.`);
   expect(spawnSync("git", ["fledgy"], { cwd: worktree, encoding: "utf8", env }).stdout).toBe("fledgy ran\n");
   expect(gitSees(env, worktree)).toBe("");
   expect(gitSees(env, root)).toBe("");
-  expect(shared.status).toBe(1);
-  expect(shared.stderr).toContain(`Another checkout of this repo has a private install, in ${fs.realpathSync(worktree)}.`);
 
-  expect(revelio(env, worktree, "init").status).toBe(0);
+  expect(revelio(env, worktree, "uninstall").status).toBe(0);
+  expect(gitSees(env, root)).toBe("");
+  expect(revelio(env, root, "init").status).toBe(0);
 
   expect(setting(env, root, "--get", "alias.fledgy")).toBeUndefined();
   expect(read(root, ".git/info/exclude")).not.toContain("fledgy");
-  expect(gitSees(env, worktree)).toBe("");
-  expect(gitSees(env, root)).toBe("");
+  expect(gitSees(env, root)).toContain("?? knowledge-base/areas.yaml\n");
 });

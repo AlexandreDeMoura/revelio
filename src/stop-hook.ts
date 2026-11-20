@@ -30,8 +30,8 @@ export async function stopHook(repoRoot: string, sentBackAlready: boolean, home 
     // Personal history must never change the Stop hook's answer.
   }
   if (!failing) return undefined;
-  // No command is suggested to the Builder: in a private install `npx revelio-ai
-  // check` would fetch a copy from npm, and the agent knows the right one.
+  // No command is suggested to the Builder: it runs in the folder with the
+  // package, and the agent knows which one from its instruction line.
   if (sentBackAlready) {
     return {
       systemMessage:

@@ -69,16 +69,16 @@ test("a failing store leaves the Stop hook answer unchanged, and failing checks 
   expect(await stopHook(root, false, blocked)).toEqual(expected);
 });
 
-test("uninstall and switching to Shared keep the History store", async () => {
-  const { initShared, uninstall } = await import("./init.js");
+test("init and uninstall keep the History store", async () => {
+  const { init, uninstall } = await import("./init.js");
   const root = hostRepo({ ...knowledgeBase("code.ts#run", "backend"), "code.ts": "export function run() {}\n", "node_modules/revelio-ai/package.json": "{}" });
   const first = commitAll(root, "app");
   await stopHook(root, false, home);
   const store = path.join(home, ".revelio", first, "history.git");
   const before = bytes(store);
-  initShared(root, root);
+  init(root, root, home);
   expect(bytes(store)).toEqual(before);
-  uninstall(root, root);
+  uninstall(root, root, home);
   expect(bytes(store)).toEqual(before);
 });
 

@@ -3,7 +3,7 @@ import { type FirstRun, offerToMap } from "./first-run.js";
 
 const next =
   "Next: open Claude Code here and type /map-the-app\n" +
-  "Then: git revelio view, to read what it writes.   Guide: https://github.com/AlexandreDeMoura/revelio/tree/main/docs";
+  "Then: npx revelio-ai view, to read what it writes.   Guide: https://github.com/AlexandreDeMoura/revelio/tree/main/docs";
 
 // A Builder who just ran init in a terminal, with Claude Code installed and
 // nothing mapped yet, answering the question with `answer`.
@@ -11,7 +11,7 @@ function builder(answer: string | undefined, situation: Partial<Pick<FirstRun, "
   const seen = { asked: [] as string[], printed: [] as string[], claudeOpened: 0 };
   const run: FirstRun = {
     where: "here",
-    view: "git revelio view",
+    view: "npx revelio-ai view",
     ask:
       answer === undefined
         ? undefined
