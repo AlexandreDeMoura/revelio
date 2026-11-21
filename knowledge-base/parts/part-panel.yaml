@@ -1,0 +1,9 @@
+name: Part panel
+is: Opens a Part under a Step, with what it does on the left and where it lives in the code on the right, each place a link that opens in VS Code.
+anchors:
+  - label: The panel under the Step
+    at: view/view.js#partPanel
+    side: screen
+  - label: One place in the code, as a link to VS Code
+    at: view/view.js#anchor
+    side: screen

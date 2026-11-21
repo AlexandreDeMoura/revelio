@@ -1,0 +1,18 @@
+name: Fledgy takeover
+is: Replaces what Fledgy, Revelio's former name, installed, its copy, its git fledgy command, its Stop hook, its instruction and what it hid from git, and moves the Builder's history and QA Results over to Revelio.
+anchors:
+  - label: What Fledgy wrote, which Revelio looks for
+    at: src/init.ts#fledgy
+    side: backend
+  - label: Removing Fledgy's copy, command and hidden lines
+    at: src/init.ts#leaveFledgy
+    side: backend
+  - label: Moving the history and QA Results out of ~/.fledgy/
+    at: src/init.ts#moveAppData
+    side: backend
+  - label: Fledgy's Stop hook, replaced by Revelio's
+    at: src/init.ts#isOurs
+    side: backend
+  - label: Fledgy's instruction line, replaced by Revelio's
+    at: src/init.ts#isOurLine
+    side: backend

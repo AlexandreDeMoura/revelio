@@ -25,3 +25,5 @@ Revelio keeps a plain-words map of an app (its Flows, Areas and Parts) true to t
 
 ## Talking with the human 
 Once you have finished your work and it is time to explain what was done to the human, use ASD-STE100 Simplified Technical English + the words from the GLOSSARY.
+
+`knowledge-base/` describes this app for the person who ships it without reading the code. After changing code, follow the `maintain-knowledge-base` skill, then run `npx revelio-ai check` in `.dogfood/` and fix what it reports before you stop. <!-- revelio -->

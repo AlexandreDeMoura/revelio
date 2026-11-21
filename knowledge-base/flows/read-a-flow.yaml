@@ -1,0 +1,47 @@
+name: Read a Flow
+area: web-view
+actor: builder
+goal: Understand what someone does in the app, step by step, on its main path and on each Variant.
+trigger: The Builder clicks a Flow in the sidebar of the web view.
+outcome: The Builder has read the Steps of the Flow's main path and of each of its Variants.
+preconditions:
+  - flow: open-the-web-view
+    so_that: The web view is open in the browser.
+  - flow_to_write: write-a-flow
+    so_that: At least one Flow is written.
+steps:
+  - id: open
+    does: Clicks a Flow under its Area in the sidebar.
+    sees: 'The Flow''s page: its Area, name and goal at the top, then Actor, Trigger and "Before it starts", and the tab "Read the Flow" open. Beside the tabs, the last commit that changed the Flow.'
+    system: Puts back, in front of each Variant, the Steps it shares with the main path, and finds the last commit that changed the Flow.
+    parts: [flow-page, flow-changes]
+  - id: main-path
+    sees: 'On the left, "Main path" with its number of steps and its outcome, then each Variant. On the right, every Step with Does, Sees, System and its Parts, the first highlighted, and the Outcome at the bottom.'
+  - id: move
+    does: Clicks a Step's number, or presses J for the next Step and K for the one before.
+    sees: That Step is highlighted, and the address in the browser names it.
+  - id: variant
+    does: 'Clicks a Variant on the left, or its name after "A Variant leaves here" on a Step.'
+    sees: 'The Variant''s Steps: those it shares with the main path, marked "Same as main path", then the highlighted Step where it leaves, marked "Leaves the main path" and when. Its own outcome is at the bottom.'
+  - id: next-flow
+    does: Clicks the next Flow's name at the top right of the page.
+    sees: The next Flow of the sidebar opens on its main path. The browser's Back button returns to the Flow before.
+qa:
+  setup:
+    - Open the web view on an app with at least two written Flows, one of which has a Variant.
+  steps:
+    - id: open
+      do: In the sidebar, click the Flow that has a Variant.
+      expect: 'Its Area, name and goal at the top, then Actor, Trigger and "Before it starts", and the tab "Read the Flow" open, with the last commit that changed the Flow beside the tabs.'
+    - id: main-path
+      do: Look at both columns.
+      expect: 'On the left, "Main path" with its number of steps and its outcome, then each Variant. On the right, every Step with Does, Sees, System and its Parts, the first highlighted, and the Outcome at the bottom.'
+    - id: move
+      do: Press J twice, then K once.
+      expect: Step 2 is highlighted, and the address in the browser ends with step=1.
+    - id: variant
+      do: Click the Variant on the left.
+      expect: 'The Steps before it leaves are marked "Same as main path", the Step where it leaves is highlighted and marked "Leaves the main path", and its own outcome is at the bottom.'
+    - id: next-flow
+      do: Click the next Flow's name at the top right, then the browser's Back button.
+      expect: The next Flow of the sidebar opens on its main path, then Back returns to the Flow before, on its Variant.

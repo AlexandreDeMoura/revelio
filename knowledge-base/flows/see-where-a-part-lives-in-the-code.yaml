@@ -1,0 +1,37 @@
+name: See where a Part lives in the code
+area: web-view
+actor: builder
+goal: Know which piece of the app does what a Step says, and where it is in the code.
+trigger: The Builder clicks a Part's name on a Step of a Flow.
+outcome: The file where the Part lives is open in VS Code.
+preconditions:
+  - flow: read-a-flow
+    so_that: A Flow's page is open on "Read the Flow".
+  - VS Code is installed on this computer.
+steps:
+  - id: open-part
+    does: 'Clicks a Part''s name under "Parts" on a Step.'
+    sees: 'A panel opens under the Step: the Part''s name and sentence on the left, and on the right "Where it lives in the code", one line per place with its label, its side and its file. An Entity also says how it relates to other things the app stores.'
+    system: Shows the Part from its file under knowledge-base/parts/.
+    parts: [part-panel]
+  - id: also
+    does: 'Clicks a step number after "Also in step", shown when other Steps of the same path name the Part.'
+    sees: That Step is highlighted, with the same Part open under it.
+  - id: open-code
+    does: Clicks one of the places in the code.
+    sees: VS Code opens that file.
+    system: The link asks VS Code to open the file at its path in this repo.
+    parts: [part-panel]
+qa:
+  setup:
+    - Open the web view on a Flow where one Part is named by two Steps of the main path, and have VS Code installed.
+  steps:
+    - id: open-part
+      do: Click the name of that Part on the first Step that names it.
+      expect: 'A panel opens under the Step, with the Part''s name and sentence on the left, and "Where it lives in the code" on the right with one line per place: its label, its side and its file.'
+    - id: also
+      do: 'Click the number after "Also in step".'
+      expect: That Step is highlighted, with the same Part open under it.
+    - id: open-code
+      do: Click one of the places under "Where it lives in the code".
+      expect: VS Code opens that file.

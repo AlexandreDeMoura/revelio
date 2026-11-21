@@ -1,0 +1,6 @@
+name: Flow changes
+is: Works out which Flows changed in work not committed and in each of the last 30 commits; a Flow changed when the code one of its Parts points to changed.
+anchors:
+  - label: Which Flows each change touched
+    at: src/flow-changes.ts#changeReader
+    side: backend

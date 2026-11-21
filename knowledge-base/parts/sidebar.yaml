@@ -1,0 +1,9 @@
+name: Sidebar
+is: The column on every page of the view, with the search, the Overview and the Changes, then every Area with its Flows and its Flows to write.
+anchors:
+  - label: The sidebar
+    at: view/view.js#sidebar
+    side: screen
+  - label: The Areas in the order they are shown
+    at: view/view.js#areaList
+    side: screen

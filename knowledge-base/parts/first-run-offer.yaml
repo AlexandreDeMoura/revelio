@@ -1,0 +1,12 @@
+name: First-run offer
+is: Right after an install, offers to open Claude Code and start mapping the app, or says what to type next and how to read what gets written.
+anchors:
+  - label: The question, and the next steps printed instead
+    at: src/first-run.ts#offerToMap
+    side: backend
+  - label: Asking in the terminal
+    at: src/cli.ts#ask
+    side: backend
+  - label: Whether Claude Code can be found on this computer
+    at: src/cli.ts#onPath
+    side: backend

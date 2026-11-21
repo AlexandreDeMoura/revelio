@@ -1,0 +1,18 @@
+name: Private install takeover
+is: Removes a private install, the way Revelio up to 0.3.0 installed for one Builder only, its copy in .revelio/, its git revelio command, its Stop hook, its instruction and what it hid from git, so that git sees the knowledge base and still not the Builder's own CLAUDE.local.md and local settings; it waits while another checkout of the repo still has one.
+anchors:
+  - label: Removing the private install's copy, hook, line and hidden lines
+    at: src/init.ts#removePrivate
+    side: backend
+  - label: Removing the git revelio command, unless the Builder changed it or another checkout needs it
+    at: src/init.ts#removeAlias
+    side: backend
+  - label: What the local exclude hides, rewritten or removed
+    at: src/init.ts#hideFromGit
+    side: backend
+  - label: The Builder's own CLAUDE.local.md and local settings, kept hidden
+    at: src/init.ts#keepPersonalHidden
+    side: backend
+  - label: The other checkouts of the repo that still have a private install
+    at: src/init.ts#otherPrivateInstalls
+    side: backend

@@ -1,0 +1,251 @@
+name: Install Revelio
+area: setup
+actor: builder
+goal: Have Revelio in an app, ready to map it, with the knowledge base it writes committed with the code for the whole team.
+trigger: The Builder runs npx revelio-ai init in the folder whose package.json has revelio-ai.
+outcome: Revelio is installed, what it added waits to be committed, and Claude Code is open at the repo's root, starting to map the app.
+preconditions:
+  - The app is in a git repo.
+  - Node 20 or later and Claude Code are installed on the Builder's computer.
+  - The app has revelio-ai in its package.json, added with npm install -D revelio-ai.
+steps:
+  - id: run
+    does: Runs npx revelio-ai init in a terminal, in the folder whose package.json has revelio-ai, or in a folder inside it.
+    sees: 'The terminal prints "Revelio is installed in this app: commit what it added, and knowledge-base/ with the code once it is written." and, under it, ".claude/skills/  .claude/settings.json  CLAUDE.md".'
+    system: Finds the app's copy of Revelio, copies its skills into .claude/skills/ at the repo's root, adds to .claude/settings.json a Stop hook that runs that copy to check the knowledge base each time the agent stops, and adds a line to CLAUDE.md telling the agent to keep the knowledge base true and where to run the check. It hides nothing from git.
+    parts: [install]
+  - id: offer
+    sees: 'The terminal asks "? Map the app now in Claude Code? (Y/n)".'
+    system: Asks only when it runs in a terminal, finds Claude Code on this computer, and finds no knowledge-base/ yet.
+    parts: [first-run-offer]
+  - id: map
+    does: Presses Enter, or types y.
+    sees: Claude Code opens in the same terminal, at the repo's root, with /map-the-app as its first message, and starts reading the app's code.
+    system: Starts a new Claude Code session at the repo's root, so the skills and the Stop hook just added are loaded.
+    parts: [first-run-offer]
+qa:
+  setup:
+    - Open a terminal at the root of an app's git repo that has a package.json, where neither Revelio nor Fledgy has been installed, and where knowledge-base/ does not exist.
+    - Run npm install -D revelio-ai, or npm install -D with the path of a packed revelio-ai to try one not released yet.
+    - Check that Claude Code is installed with claude --version.
+  steps:
+    - id: run
+      do: Run npx revelio-ai init.
+      expect: 'The terminal prints "Revelio is installed in this app: commit what it added, and knowledge-base/ with the code once it is written." and ".claude/skills/  .claude/settings.json  CLAUDE.md".'
+    - id: offer
+      do: Read the next line.
+      expect: 'The terminal asks "? Map the app now in Claude Code? (Y/n)".'
+    - id: map
+      do: Press Enter.
+      expect: Claude Code opens at the repo's root with /map-the-app as its first message and starts reading the code. Leave it with /exit once it has started.
+    - id: committed
+      do: Run git status.
+      expect: .claude/settings.json, the skills in .claude/skills/ and CLAUDE.md are listed, new or changed, and nothing named .revelio/ or CLAUDE.local.md.
+    - id: command
+      do: Run npx revelio-ai check.
+      expect: The terminal answers with the result of the knowledge base check.
+variants:
+  - id: map-later
+    name: The Builder maps later
+    diverges_at: offer
+    when: 'The Builder types n, or there is nothing to ask: init runs without a terminal, as when an agent runs it, Claude Code is not found, or knowledge-base/ exists already, as when init is run again to upgrade.'
+    outcome: Revelio is installed, and the terminal says how to start mapping and how to read what gets written.
+    steps:
+      - id: next
+        does: Types n, when asked.
+        sees: 'The terminal prints "Next: open Claude Code here and type /map-the-app", or "at the repo root" instead of "here" when run from a folder inside the repo, then "Then: npx revelio-ai view, to read what it writes.", with "in web/" after "view" when the package is in web/, and a link to the guide.'
+        system: Prints the next steps instead of opening Claude Code.
+        parts: [first-run-offer]
+    qa:
+      setup:
+        - Open a terminal in a folder inside an app's git repo, such as web/, whose package.json has revelio-ai, where neither Revelio nor Fledgy has been installed, and where knowledge-base/ does not exist.
+      steps:
+        - id: run
+          do: Run npx revelio-ai init.
+          expect: '"Revelio is installed in this app: commit what it added, and knowledge-base/ with the code once it is written.", then "? Map the app now in Claude Code? (Y/n)".'
+        - id: decline
+          do: Type n and press Enter.
+          expect: '"Next: open Claude Code at the repo root and type /map-the-app", then "Then: npx revelio-ai view in web/, to read what it writes." and a link to the guide. Claude Code does not open.'
+        - id: again
+          do: Create an empty knowledge-base/ folder at the repo's root, then run npx revelio-ai init again.
+          expect: The same lines print without the question, and CLAUDE.md has one line ending in <!-- revelio -->. Remove the knowledge-base/ folder afterwards.
+  - id: npm-init
+    name: The Builder runs npm init revelio
+    diverges_at: run
+    when: The Builder types npm init revelio instead of npm install -D revelio-ai and npx revelio-ai init, to install Revelio or to upgrade it.
+    outcome: The latest Revelio is in the app's package.json, and installed exactly as on the main path, and the terminal offers to map the app.
+    steps:
+      - id: run-npm-init
+        does: Runs npm init revelio in a terminal, in the folder with the app's package.json, and answers y if npm asks to install create-revelio.
+        sees: 'npm says it added the package, then the terminal prints "Revelio is installed in this app: commit what it added, and knowledge-base/ with the code once it is written." and, under it, ".claude/skills/  .claude/settings.json  CLAUDE.md".'
+        system: Adds the latest revelio-ai to the app's package.json with npm, at its exact version, then runs that copy's init in the same folder, without asking a second time to download it, and ends the way it ends.
+        parts: [install]
+      - id: offer-after-npm-init
+        sees: 'The terminal asks "? Map the app now in Claude Code? (Y/n)".'
+        system: Asks only when it runs in a terminal, finds Claude Code on this computer, and finds no knowledge-base/ yet.
+        parts: [first-run-offer]
+    qa:
+      setup:
+        - Open a terminal at the root of an app's git repo that has a package.json, no lockfile or a package-lock.json, and no revelio-ai yet.
+      steps:
+        - id: run
+          do: Run npm init revelio, and answer y if npm asks to install create-revelio.
+          expect: 'npm asks at most once and says it added the package, then the terminal prints "Revelio is installed in this app: commit what it added, and knowledge-base/ with the code once it is written." and ".claude/skills/  .claude/settings.json  CLAUDE.md".'
+        - id: offer
+          do: Read the next line, then type n and press Enter.
+          expect: 'The terminal asks "? Map the app now in Claude Code? (Y/n)", then prints "Next: open Claude Code here and type /map-the-app".'
+        - id: pinned
+          do: Open package.json.
+          expect: devDependencies has revelio-ai at one exact version, with no ^ before it.
+  - id: npm-init-stops
+    name: npm init revelio stops
+    diverges_at: run
+    when: The Builder runs npm init revelio in a folder with no package.json, or in an app whose folder, or one above it up to the repo's root, has the lockfile of pnpm, yarn or bun.
+    outcome: Nothing is written, and the terminal says where to run it, or which commands to run instead.
+    steps:
+      - id: npm-init-refused
+        does: Runs npm init revelio in a terminal, and answers y if npm asks to install create-revelio.
+        sees: 'One message, by case: "There is no package.json here, and Revelio installs in the app: run npm init revelio in the folder with the app''s package.json. Nothing was written."; or "This app uses pnpm, so npm init revelio wrote nothing. Run:" with that tool''s command to add revelio-ai, such as "pnpm add -D revelio-ai", then "npx revelio-ai init".'
+        system: Checks both before it runs npm, and runs none of the commands it prints, since npm would write a second lockfile beside the app's own.
+        parts: [install]
+    qa:
+      setup:
+        - Open a terminal at the root of an app's git repo that has a package.json and a pnpm-lock.yaml, and no revelio-ai.
+      steps:
+        - id: run
+          do: Run npm init revelio.
+          expect: '"This app uses pnpm, so npm init revelio wrote nothing. Run:", then "pnpm add -D revelio-ai" and "npx revelio-ai init".'
+        - id: nothing-written
+          do: Run git status.
+          expect: git status lists nothing new, and package.json has no revelio-ai.
+  - id: not-in-the-app
+    name: Revelio is not in the app
+    diverges_at: run
+    when: 'The folder, and those above it up to the repo''s root, have no revelio-ai in node_modules: the Builder has not run npm install -D revelio-ai yet, or types npx revelio-ai@latest init, which upgraded a private install up to 0.3.0.'
+    outcome: Nothing is written, and the terminal says how to add Revelio to the app.
+    steps:
+      - id: not-installed
+        does: Runs npx revelio-ai init in a terminal, in the app's repo.
+        sees: '"revelio-ai is not installed here, and Revelio installs in the app: run `npm install -D revelio-ai`, then `npx revelio-ai init` from the same folder, or `npm init revelio`, which does both. Nothing was written."'
+        system: Finds no copy of Revelio in the app and stops before writing anything. It runs none of the commands it prints.
+        parts: [install]
+    qa:
+      setup:
+        - Open a terminal in an app's git repo that has a package.json without revelio-ai, where neither Revelio nor Fledgy has been installed.
+      steps:
+        - id: run
+          do: Run npx revelio-ai@latest init.
+          expect: '"revelio-ai is not installed here, and Revelio installs in the app: run `npm install -D revelio-ai`, then `npx revelio-ai init` from the same folder, or `npm init revelio`, which does both. Nothing was written."'
+        - id: nothing-written
+          do: Run git status.
+          expect: git status lists nothing new.
+  - id: from-private
+    name: A private install was there
+    diverges_at: run
+    when: The Builder had installed Revelio 0.3.0 or before in this repo, for themselves only, with npx revelio-ai init.
+    outcome: The private install is gone, git now sees the knowledge base so that it can be committed, and the Builder's history and QA Results are kept.
+    steps:
+      - id: replace-private
+        does: Runs npx revelio-ai init in a terminal, in the folder whose package.json has revelio-ai.
+        sees: 'The terminal prints "Revelio is installed in this app: commit what it added, and knowledge-base/ with the code once it is written.", the list of what it added, then "Your private install is gone, and git now sees knowledge-base/: commit it with the rest."'
+        system: Installs Revelio as on the main path, then removes the .revelio/ copy, the git revelio command, its Stop hook in .claude/settings.local.json and its line in CLAUDE.local.md, removing a file left empty, and stops hiding knowledge-base/ from git. A CLAUDE.local.md or .claude/settings.local.json with the Builder's own lines stays, still hidden from git, and so do their history and QA Results.
+        parts: [install, private-install-takeover]
+      - id: offer-after-private
+        sees: 'The terminal prints "Next: open Claude Code here and type /map-the-app" and "Then: npx revelio-ai view, to read what it writes.", since knowledge-base/ is there already.'
+        system: Does not offer to map, since the app already has a knowledge base.
+        parts: [first-run-offer]
+    qa:
+      setup:
+        - Open a terminal at the root of an app's repo that has a package.json, where Revelio 0.3.0 is installed for you only, with a knowledge base and at least one QA Result recorded in the web view.
+        - Add revelio-ai to the app as for the main path.
+      steps:
+        - id: run
+          do: Run npx revelio-ai init.
+          expect: '"Revelio is installed in this app: commit what it added, and knowledge-base/ with the code once it is written.", the list of what it added, then "Your private install is gone, and git now sees knowledge-base/: commit it with the rest."'
+        - id: private-gone
+          do: Run git revelio check.
+          expect: Git says "'revelio' is not a git command", and there is no .revelio/ folder at the repo's root.
+        - id: no-local-line
+          do: Open CLAUDE.local.md, if it is still there, then CLAUDE.md.
+          expect: CLAUDE.local.md has no line ending in <!-- revelio -->, and any line of your own is still there. CLAUDE.md has one.
+        - id: seen
+          do: Run git status.
+          expect: The files of knowledge-base/ are listed, with .claude/settings.json, the skills and CLAUDE.md. CLAUDE.local.md and .claude/settings.local.json are not listed.
+        - id: results-kept
+          do: Run npx revelio-ai view and open the Flow whose QA Result you recorded.
+          expect: The QA Result you recorded with the private install is still there, with its note.
+  - id: from-fledgy
+    name: Fledgy was installed
+    diverges_at: run
+    when: The Builder had installed Fledgy, Revelio's former name, for themselves in this repo.
+    outcome: Revelio replaces Fledgy, git sees the knowledge base, and the Builder's history and QA Results are kept.
+    steps:
+      - id: replace
+        does: Runs npx revelio-ai init in a terminal, in the folder whose package.json has revelio-ai.
+        sees: 'The terminal prints "Revelio is installed in this app: commit what it added, and knowledge-base/ with the code once it is written.", the list of what it added, "Fledgy is now Revelio: your Fledgy install is replaced, so type npx revelio-ai where you typed git fledgy." and "Your private install is gone, and git now sees knowledge-base/: commit it with the rest."'
+        system: Installs Revelio as on the main path, then removes the .fledgy/ copy and the git fledgy command, removes Fledgy's Stop hook and its line in CLAUDE.local.md, so the agent is checked once, and stops hiding what Fledgy hid, except a CLAUDE.local.md or .claude/settings.local.json with the Builder's own lines. It moves the Builder's history and QA Results from ~/.fledgy/ to ~/.revelio/, unless Revelio already has some for this repo.
+        parts: [install, fledgy-takeover, private-install-takeover]
+      - id: offer-after-fledgy
+        sees: 'The terminal prints "Next: open Claude Code here and type /map-the-app" and "Then: npx revelio-ai view, to read what it writes.", since knowledge-base/ is there already.'
+        system: Does not offer to map, since the app already has a knowledge base.
+        parts: [first-run-offer]
+    qa:
+      setup:
+        - Open a terminal at the root of an app's repo that has a package.json, where Fledgy is installed for you only, with a knowledge base and at least one QA Result recorded in the web view.
+        - Add revelio-ai to the app as for the main path.
+      steps:
+        - id: run
+          do: Run npx revelio-ai init.
+          expect: '"Revelio is installed in this app: commit what it added, and knowledge-base/ with the code once it is written.", the list of what it added, then "Fledgy is now Revelio: your Fledgy install is replaced, so type npx revelio-ai where you typed git fledgy." and "Your private install is gone, and git now sees knowledge-base/: commit it with the rest."'
+        - id: fledgy-gone
+          do: Run git fledgy check.
+          expect: Git says "'fledgy' is not a git command", and there is no .fledgy/ folder at the repo's root.
+        - id: one-line
+          do: Open CLAUDE.local.md, if it is still there, then CLAUDE.md.
+          expect: CLAUDE.local.md has no line ending in <!-- fledgy --> or <!-- revelio -->, and any line of your own is still there. CLAUDE.md has one line about knowledge-base/, ending in <!-- revelio -->.
+        - id: seen
+          do: Run git status.
+          expect: The files of knowledge-base/ are listed, and neither .fledgy/, CLAUDE.local.md nor .claude/settings.local.json.
+        - id: results-kept
+          do: Run npx revelio-ai view and open the Flow whose QA Result you recorded.
+          expect: The QA Result you recorded with Fledgy is still there, with its note.
+  - id: app-has-fledgy
+    name: The app still depends on Fledgy
+    diverges_at: run
+    when: The app has fledgy in its node_modules where Revelio looks for revelio-ai, and no revelio-ai.
+    outcome: Nothing is written, and the terminal says how to move the app over to Revelio.
+    steps:
+      - id: move-over
+        does: Runs npx revelio-ai init in a terminal, in the folder whose package.json has fledgy.
+        sees: '"This app depends on Fledgy, which is now Revelio. Nothing was written. To move over, run:", then "npm uninstall fledgy && npm install -D revelio-ai && npx revelio-ai init" and "then commit what changed."'
+        system: Finds Fledgy where it looks for Revelio, and stops before writing anything. It runs none of the commands it prints.
+        parts: [install]
+    qa:
+      setup:
+        - Open a terminal in the folder of an app whose package.json has fledgy and not revelio-ai.
+      steps:
+        - id: run
+          do: Run npx revelio-ai init.
+          expect: '"This app depends on Fledgy, which is now Revelio. Nothing was written. To move over, run:", then "npm uninstall fledgy && npm install -D revelio-ai && npx revelio-ai init" and "then commit what changed." git status lists nothing new.'
+  - id: in-the-way
+    name: Something in the repo is in the way
+    diverges_at: run
+    when: Another checkout of the repo, a linked worktree, still has a private install of Revelio or Fledgy, or .claude/settings.json cannot be read.
+    outcome: Nothing is written, and the terminal says what is in the way.
+    steps:
+      - id: refused
+        does: Runs npx revelio-ai init in a terminal, in the folder whose package.json has revelio-ai.
+        sees: 'One message, by case: "Another checkout of this repo has a private install, in <folder>.", then that the two share what git hides, "Nothing was written." and "To go on, first run npx revelio-ai uninstall in that checkout."; or ".claude/settings.json is not valid JSON and was left as it is", with the reason.'
+        system: Checks each of these before writing anything, and stops at the first one it meets.
+        parts: [install, private-install-takeover]
+    qa:
+      setup:
+        - Set up an app as for the main path.
+        - Create .claude/settings.json at the repo's root with the text { not json.
+      steps:
+        - id: run
+          do: Run npx revelio-ai init.
+          expect: '".claude/settings.json is not valid JSON and was left as it is:" with the reason.'
+        - id: nothing-written
+          do: Run git status.
+          expect: Only the .claude/settings.json you made is listed, still with { not json, and there is no CLAUDE.md. Remove the file afterwards.

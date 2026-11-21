@@ -1,0 +1,126 @@
+name: Open the web view
+area: web-view
+actor: builder
+goal: See the knowledge base in the browser, and how far it has come.
+trigger: The Builder runs npx revelio-ai view in the folder where the app has Revelio.
+outcome: The Overview is open in the browser, saying how many Flows are written, how many wait to be, and which changed lately.
+preconditions:
+  - flow: install-revelio
+    so_that: Revelio is installed in the app.
+  - At least one Flow is written in knowledge-base/.
+steps:
+  - id: run
+    does: Runs npx revelio-ai view in a terminal, in the folder whose package.json has revelio-ai, adding --port and a number to use another port than 4173.
+    sees: 'The terminal prints "Knowledge base web view: http://localhost:4173/" and keeps running until stopped.'
+    system: Runs the app's copy of Revelio, which starts a small web server only this computer can reach.
+    parts: [web-view-server]
+  - id: open
+    does: Opens that address in the browser.
+    sees: 'The sidebar on the left: a search, Overview and Changes, then each Area with its number of Flows. On the right, "<repo> · Knowledge base" over a heading such as "3 Flows are written. 4 more are waiting to be written."'
+    system: The page asks the server for the knowledge base. The server reads every file of knowledge-base/ again, and works out which Flows changed in work not committed and in the last 30 commits.
+    parts: [web-view-server, knowledge-base-reading, flow-changes, sidebar]
+  - id: overview
+    sees: 'Under the heading: "Not committed yet" with the Flows changed on this computer, if any; "In the last commit" with its Flows or "It changed no Flow."; then "Still to write", how many Flows to write each Area has.'
+    system: Counts the Flows to write of each Area, and names first, at most three, those that written Flows already wait for.
+    parts: [overview]
+  - id: come-back
+    does: Leaves the browser, for example while Claude Code writes a Flow, then comes back to it.
+    sees: What changed in knowledge-base/ shows, and the foot of the sidebar says "read 0 s ago".
+    system: Reads the knowledge base again each time the window comes back to the front, unless a note is being typed.
+    parts: [knowledge-base-reading]
+qa:
+  setup:
+    - Open a terminal in an app's repo where Revelio is installed and at least one Flow is written.
+  steps:
+    - id: run
+      do: Run npx revelio-ai view.
+      expect: 'The terminal prints "Knowledge base web view: http://localhost:4173/" and keeps running.'
+    - id: open
+      do: Open http://localhost:4173/ in the browser.
+      expect: The sidebar shows a search, Overview, Changes and each Area with its number of Flows. On the right, a heading says how many Flows are written and how many more wait to be.
+    - id: sections
+      do: Read what is under the heading.
+      expect: '"Not committed yet" with the Flows changed on this computer, if any; "In the last commit" with its Flows, or "It changed no Flow."; "Still to write" with how many Flows to write each Area has, when some are left.'
+    - id: come-back
+      do: Leave the browser, change the name of a Flow in its file under knowledge-base/flows/, then come back to the browser.
+      expect: The sidebar shows the new name, and its foot says "read 0 s ago". Put the old name back afterwards.
+variants:
+  - id: nothing-mapped
+    name: Nothing is mapped yet
+    diverges_at: open
+    when: knowledge-base/ has no Area and no Flow yet, as before a mapping starts.
+    outcome: The Overview says nothing is mapped yet, and how to start.
+    steps:
+      - id: open-empty
+        does: Opens that address in the browser.
+        sees: 'The sidebar says "Nothing mapped yet." The page says "Nothing is mapped yet." and to type /map-the-app in Claude Code.'
+        system: The page asks the server for the knowledge base, and the server finds no Area and no Flow in knowledge-base/.
+        parts: [web-view-server, knowledge-base-reading, overview]
+    qa:
+      setup:
+        - Open a terminal in an app's repo where Revelio is installed and knowledge-base/ is missing or has no areas.yaml.
+      steps:
+        - id: run
+          do: Run npx revelio-ai view.
+          expect: 'The terminal prints "Knowledge base web view: http://localhost:4173/".'
+        - id: open
+          do: Open http://localhost:4173/ in the browser.
+          expect: 'The sidebar says "Nothing mapped yet." The page says "Nothing is mapped yet." and to type /map-the-app in Claude Code.'
+  - id: no-flow-written
+    name: No Flow is written yet
+    diverges_at: open
+    when: knowledge-base/areas.yaml lists Areas and Flows to write, but no Flow is written yet, as after the first Area's list is made.
+    outcome: The Overview says no Flow is written yet, how many wait to be, and how to carry on.
+    steps:
+      - id: open-unwritten
+        does: Opens that address in the browser.
+        sees: 'The sidebar lists each Area folded, with its count, such as "0 · 7 to write". The page says "No Flow is written yet." and how many are waiting to be written.'
+        system: The page asks the server for the knowledge base, and the server finds Areas and Flows to write but no Flow.
+        parts: [web-view-server, knowledge-base-reading, sidebar]
+      - id: carry-on
+        sees: 'Under the heading: "The Areas and the Flows to write are listed on the left. In Claude Code, type /map-the-app to carry on".'
+        system: Says how to carry on the mapping.
+        parts: [overview]
+    qa:
+      setup:
+        - Open a terminal in an app's repo where Revelio is installed and the first Area's Flows are listed, but none is written yet.
+      steps:
+        - id: run
+          do: Run npx revelio-ai view.
+          expect: 'The terminal prints "Knowledge base web view: http://localhost:4173/".'
+        - id: open
+          do: Open http://localhost:4173/ in the browser.
+          expect: 'Each Area is folded in the sidebar with a count such as "0 · 7 to write". The page says "No Flow is written yet." and how many are waiting to be written.'
+        - id: carry-on
+          do: Read what is under the heading.
+          expect: It says the Areas and the Flows to write are listed on the left, and to type /map-the-app in Claude Code to carry on.
+  - id: unreadable
+    name: A file cannot be read
+    diverges_at: open
+    when: A file of knowledge-base/ is not valid YAML, for example one an agent is halfway through writing.
+    outcome: The page says which file could not be read, and shows the knowledge base again once the file is fixed and the window comes back to the front.
+    steps:
+      - id: open-broken
+        does: Opens that address in the browser.
+        sees: '"The knowledge base could not be read" over the error, which starts with the path of the file, such as knowledge-base/flows/read-a-flow.yaml. There is no sidebar.'
+        system: The server stops at the file it cannot read and sends back the error with the file's path.
+        parts: [web-view-server, knowledge-base-reading]
+      - id: fixed
+        does: Fixes the file, or waits for the agent to finish it, then comes back to the browser.
+        sees: The Overview shows, with the sidebar.
+        system: Reads the knowledge base again as the window comes back to the front.
+        parts: [knowledge-base-reading]
+    qa:
+      setup:
+        - Open a terminal in an app's repo where Revelio is installed and at least one Flow is written.
+        - 'Add a last line "broken: [" to one Flow file under knowledge-base/flows/.'
+      steps:
+        - id: run
+          do: Run npx revelio-ai view.
+          expect: 'The terminal prints "Knowledge base web view: http://localhost:4173/".'
+        - id: open
+          do: Open http://localhost:4173/ in the browser.
+          expect: '"The knowledge base could not be read" over an error that starts with the path of the file you broke. There is no sidebar.'
+        - id: fixed
+          do: Leave the browser, remove the line you added, then come back to the browser.
+          expect: The Overview shows, with the sidebar.

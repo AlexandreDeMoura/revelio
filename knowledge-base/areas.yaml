@@ -1,0 +1,36 @@
+web-view:
+  name: Web view
+  is: Reading the knowledge base in the browser.
+  flows_to_write:
+    see-what-changed:
+      name: See what changed
+      is: The Builder opens the Changes to see, newest first, which Flows have changes not committed and which each of the last commits changed, and which QA Results were recorded before each change.
+    search-the-knowledge-base:
+      name: Search the knowledge base
+      is: The Builder types in the search to find a Flow, a Flow to write or a Part by its name or its sentence, and opens it.
+    open-a-flow-to-write:
+      name: Open a Flow to write
+      is: The Builder opens a Flow to write from the sidebar, the search, the Overview or a precondition, to see what it is and which written Flows wait for it, and copies the command that writes it.
+    switch-the-theme:
+      name: Switch the theme
+      is: The Builder picks a light or dark theme, or one that follows the system, and the browser keeps the choice.
+setup:
+  name: Setup
+  is: Installing Revelio in an app, upgrading it and removing it.
+mapping:
+  name: Mapping
+  is: An agent writing the knowledge base from zero with you, one Area at a time.
+  flows_to_write:
+    write-a-flow:
+      name: Write a Flow
+      is: The Builder asks Claude Code to write one Flow, and the agent reads the code from its trigger to its outcome and writes the Flow, its Variants, its Manual QA Checks and its Parts in knowledge-base/.
+vs-code:
+  name: VS Code
+  is: Reading the knowledge base in the Revelio view, a tab inside VS Code beside the app's code.
+  flows_to_write:
+    read-a-flow-in-vs-code:
+      name: Read a Flow in VS Code
+      is: The Builder runs Revelio Open in VS Code, or clicks the Revelio button in the status bar, lands on the open app's Overview, which says how many Flows are written and still to write, what the last commit changed and which Flow to write first, puts /map-the-app in the agent's chat, and lists each Area with its Flows, opens a Flow from it to read it, goes back to the Overview from the toolbar or the app's name, follows its main path or a Variant chosen in the path picker or from the Step it leaves at, sees its last commit and changes not committed kept up to date as code is changed and committed, clicks that commit to see beside the view what it changed in the Flow's code, and opens where a Part lives in the code or asks the agent about it.
+    check-a-flow-by-hand-in-vs-code:
+      name: Check a Flow by hand in VS Code
+      is: The Builder presses C, or clicks Check by hand, on a Flow page in the Revelio view to follow the Manual QA Check of the main path or a Variant, records each QA Step as passed, failed or could not perform with a note, kept in the same QA Results as the web view's, sees a QA Result recorded in the web view show at once without a reload, asks the agent to fix the QA Steps that failed, starts the path over or goes on to the next path, and presses R to read the Flow again.

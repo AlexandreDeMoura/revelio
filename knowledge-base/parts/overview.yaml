@@ -1,0 +1,6 @@
+name: Overview
+is: The view's home page, which says how many Flows are written and how many wait to be, which changed lately, and which Flows to write to start with.
+anchors:
+  - label: The Overview page
+    at: view/view.js#overview
+    side: screen

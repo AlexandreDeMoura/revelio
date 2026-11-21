@@ -1,0 +1,9 @@
+name: Web view server
+is: Serves the web view on this computer only, and answers the page's requests for the knowledge base.
+anchors:
+  - label: The view command and the address it prints
+    at: src/cli.ts#view
+    side: backend
+  - label: The server and what it answers
+    at: src/view.ts#startView
+    side: backend

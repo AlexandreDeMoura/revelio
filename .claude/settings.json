@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.dogfood/node_modules/.bin/revelio\" stop-hook"
+          }
+        ]
+      }
+    ]
+  }
+}

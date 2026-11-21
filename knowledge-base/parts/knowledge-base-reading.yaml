@@ -1,0 +1,12 @@
+name: Knowledge base reading
+is: Reads every file of knowledge-base/ again each time the page asks, and again each time the browser window comes back to the front, so what an agent just wrote shows without a restart.
+anchors:
+  - label: Reading the Actors, Areas, Flows and Parts, and naming a file that cannot be read
+    at: src/read-knowledge-base.ts#readKnowledgeBase
+    side: backend
+  - label: Asking again when the window comes back to the front
+    at: view/view.js#refresh
+    side: screen
+  - label: The error shown when the knowledge base cannot be read
+    at: view/view.js#render
+    side: screen

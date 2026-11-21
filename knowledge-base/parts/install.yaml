@@ -1,0 +1,27 @@
+name: Install
+is: Installs Revelio in an app, its skills, its Stop hook that runs the app's copy and its instruction to the agent, all for the team to commit with the knowledge base, unless Revelio is not in the app or something in the repo is in the way.
+anchors:
+  - label: The init command and what it prints
+    at: src/cli.ts#install
+    side: backend
+  - label: npm init revelio, which adds the latest Revelio to the app, then runs its init command with the same words
+    at: packages/create-revelio/cli.js
+    side: backend
+  - label: The install, step by step
+    at: src/init.ts#init
+    side: backend
+  - label: Finding the app's copy of Revelio, or saying how to add it
+    at: src/init.ts#folderWithThePackage
+    side: backend
+  - label: The skills copied into .claude/skills/
+    at: src/init.ts#copySkills
+    side: backend
+  - label: The Stop hook that checks the knowledge base when the agent stops
+    at: src/init.ts#withStopHook
+    side: backend
+  - label: The line that tells the agent to keep the knowledge base true
+    at: src/init.ts#writeInstruction
+    side: backend
+  - label: The settings file it refuses to change when it cannot read it
+    at: src/init.ts#readSettings
+    side: backend

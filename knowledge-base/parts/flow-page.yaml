@@ -1,0 +1,12 @@
+name: Flow page
+is: Shows one Flow, with its facts at the top, its main path and its Variants on the left, and the Steps of the chosen one on the right.
+anchors:
+  - label: The Flow page and its "Read the Flow" tab
+    at: view/view.js#flowPage
+    side: screen
+  - label: One Step, with what the Builder does and sees, what the system does and its Parts
+    at: view/view.js#stepRow
+    side: screen
+  - label: A Variant made whole again, with the Steps it shares with the main path in front
+    at: src/read-knowledge-base.ts#paths
+    side: backend
