@@ -412,7 +412,8 @@ test("a warm request reads no commits again when QA Results were recorded at man
   commitAll(root, "many QA Steps");
   const file = qaResultsFile(root, home)!;
   for (const step of steps) {
-    commitAll(root, `before ${step}`);
+    // An empty commit, with one git run, not the three of commitAll.
+    git(root, "commit", "--quiet", "--allow-empty", "--message", `before ${step}`);
     recordQaResult(root, file, { flow, path: "main", step }, false, { state: "passed", note: "" });
   }
   const { warm, trace } = await warmGitTrace(root);
@@ -423,12 +424,13 @@ test("a warm request reads no commits again when QA Results were recorded at man
 
 test("a warm request reads no Knowledge base version again when there are hundreds", async () => {
   const root = app();
-  // In a Shared install, each commit that changes the Knowledge base is a
-  // version. One fast-import writes them all, far quicker than a commit each.
+  // Each commit that changes the Knowledge base is a version. One
+  // fast-import writes them all, far quicker than a commit each.
   const data = (text: string) => `data ${Buffer.byteLength(text)}\n${text}\n`;
+  const branch = git(root, "branch", "--show-current");
   let stream = "";
   for (let n = 0; n < 300; n++) {
-    stream += `commit refs/heads/${git(root, "branch", "--show-current")}\n`;
+    stream += `commit refs/heads/${branch}\n`;
     stream += `committer Builder <builder@example.com> ${1_900_000_000 + n} +0000\n${data(`version ${n}`)}`;
     if (n === 0) stream += `from ${git(root, "rev-parse", "HEAD")}\n`;
     stream += `M 100644 inline ${part}\n${data(`${partWithAnchor("code.ts#anchored", "backend")}# ${n}\n`)}`;
