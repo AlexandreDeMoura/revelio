@@ -13,7 +13,7 @@ The two talk through `webview.postMessage` and `acquireVsCodeApi().postMessage`.
 
 ## Code shared with the web view
 
-The extension reads the knowledge base and what git says of it with the same code as the web view that `git revelio view` serves: `readKnowledgeBase` in the repo root's `src/read-knowledge-base.ts` and `changeReader` in `src/flow-changes.ts`, which esbuild bundles into `dist/extension.js`. The shape it reads is in `src/knowledge-base.ts`, types only, which the webview may import too. A change to that code changes both views.
+The extension reads the knowledge base and what git says of it with the same code as the web view that `npx revelio-ai view` serves: `readKnowledgeBase` in the repo root's `src/read-knowledge-base.ts` and `changeReader` in `src/flow-changes.ts`, which esbuild bundles into `dist/extension.js`. The shape it reads is in `src/knowledge-base.ts`, types only, which the webview may import too. A change to that code changes both views.
 
 That code needs the repo root's packages (`yaml`, `web-tree-sitter`) and grammars, so run `npm install` and `npm run grammars` at the repo root as well as `npm install` here. It finds its tree-sitter files from where it runs, so `esbuild.mjs` gives the bundle its own `import.meta.url` and copies `web-tree-sitter.wasm` into `dist/` and the grammars into `grammars/`, both packaged with the extension.
 
@@ -43,13 +43,13 @@ This is how the Builder tries a change: in the VS Code they use, with the extens
 
 ### Run and Debug (optional)
 
-Open the repo root in VS Code and press F5 (fn+F5 on a Mac keyboard), or start "Run the Revelio extension" from Run and Debug. It starts both watchers, then opens a second VS Code window, the Extension Development Host, with only this extension loaded and this repo open, so the view shows this repo's own `knowledge-base/` when it has one (see `docs/dogfooding.md`). The repo opens through `.vscode/extension-host.code-workspace`, since VS Code refuses to open a folder another window already has open: for the same reason, opening the repo folder by hand in that window does nothing. To try another app, open its folder in that window. The Revelio view does not open by itself: run **Revelio: Open** from the Command Palette (Cmd+Shift+P) in that window. After a change, run **Developer: Reload Window** in that window.
+Open the repo root in VS Code and press F5 (fn+F5 on a Mac keyboard), or start "Run the Revelio extension" from Run and Debug. It starts both watchers, then opens a second VS Code window, the Extension Development Host, with only this extension loaded and this repo open, so the view shows this repo's own `knowledge-base/` (see `docs/dogfooding.md`). The repo opens through `.vscode/extension-host.code-workspace`, since VS Code refuses to open a folder another window already has open: for the same reason, opening the repo folder by hand in that window does nothing. To try another app, open its folder in that window. The Revelio view does not open by itself: run **Revelio: Open** from the Command Palette (Cmd+Shift+P) in that window. After a change, run **Developer: Reload Window** in that window.
 
 An agent checking a change in real VS Code from its own shell follows `docs/e2e-vscode.md` instead.
 
 ## Manual QA
 
-One checklist per thing the view does. Run them in the installed extension (see "Try your changes in VS Code"), in a window open on an app with a `knowledge-base/`, such as this repo when it is dogfooded. When a change adds to or changes what the view does, change its checklist here.
+One checklist per thing the view does. Run them in the installed extension (see "Try your changes in VS Code"), in a window open on an app with a `knowledge-base/`, such as this repo. When a change adds to or changes what the view does, change its checklist here.
 
 ### Opening the view
 
@@ -90,8 +90,8 @@ One checklist per thing the view does. Run them in the installed extension (see 
 - [ ] On a Flow page, **C** opens **Check by hand** and **R** goes back to **Read the Flow**. Clicking the two tabs does the same. While the note box has the focus, R and C type into it.
 - [ ] Check by hand shows "Manual QA Check · <path>", how many QA Steps are left to check, a bar with one segment per QA Step, and "Prepare" with each setup line of the path's Manual QA Check. The tab line says "N of M QA Steps passed".
 - [ ] The first QA Step not checked is open, with what to do, what to expect, **Passed**, **Failed**, **Could not perform** and a note box. Picking a result closes it with its result and its note, and opens the next QA Step not checked.
-- [ ] `~/.revelio/<first commit of the app>/qa-results.json` holds each result picked, with its note. `git revelio view` shows the same results.
-- [ ] With Check by hand open on a Flow, record a QA Result of that Flow in `git revelio view`: without a reload or a click, the Revelio view shows it, and the tab line's "N of M QA Steps passed" changes. **Start over** in the web view sets the QA Steps back to not checked here too.
+- [ ] `~/.revelio/<first commit of the app>/qa-results.json` holds each result picked, with its note. `npx revelio-ai view` shows the same results.
+- [ ] With Check by hand open on a Flow, record a QA Result of that Flow in `npx revelio-ai view`: without a reload or a click, the Revelio view shows it, and the tab line's "N of M QA Steps passed" changes. **Start over** in the web view sets the QA Steps back to not checked here too.
 - [ ] Clicking a QA Step already checked opens it again with its result picked. Changing its note and leaving the box saves the note.
 - [ ] Choosing a Variant in the path picker shows its Manual QA Check.
 - [ ] Once every QA Step has a result, the page says "<path> checked" and offers **Check the next path: <name>**, which opens that path's Manual QA Check.

@@ -1,6 +1,6 @@
 # Plan: the knowledge base in git
 
-Status: planned, not started. Written on 20 November 2026. Card: [#16](https://github.com/AlexandreDeMoura/revelio/issues/16).
+Status: done, on 21 November 2026. Written on 20 November 2026. Card: [#16](https://github.com/AlexandreDeMoura/revelio/issues/16).
 
 Today `npx revelio-ai init` makes a **Private install**: Revelio in `.revelio/`, and the skills, the Stop hook, the instruction line and `knowledge-base/` hidden from git by the local exclude. This plan removes it. `init` then makes the one install that is left, today's **Shared install**: the app depends on `revelio-ai`, and the skills, the Stop hook, the line in `CLAUDE.md` and `knowledge-base/` are committed with the code.
 
@@ -72,14 +72,14 @@ While a mapping goes on, the Mapping record is committed too, and is removed in 
 
 ### 8. This repo's own install
 
-This repo is `revelio-ai`, so it cannot depend on itself. The released copy goes in `.revelio/` again, with its own `package.json`, and `init` runs from there:
+This repo is `revelio-ai`, so it cannot depend on itself. The released copy goes in `.dogfood/`, a package of its own, and `init` runs from there:
 
 ```sh
-npm install --prefix .revelio --save-exact revelio-ai@<version>
-cd .revelio && node_modules/.bin/revelio init
+npm install --prefix .dogfood --save-exact revelio-ai@<version>
+cd .dogfood && npx revelio-ai init
 ```
 
-`init` finds the package in `.revelio/` as it finds one in `web/`, so this needs no special case. `.revelio/` goes in `.gitignore`. The Stop hook in `.claude/settings.json`, the line in `CLAUDE.md` ("run `npx revelio-ai check` in `.revelio/`"), `.claude/skills/` and `knowledge-base/` are committed. A contributor who did not run the install sees a "hook error" when the agent stops: `docs/dogfooding.md` says to run it after a clone.
+Not in `.revelio/`, as this plan first said: `init` takes a `.revelio/` at the git root for a private install, and removes it. `init` finds the package in `.dogfood/` as it finds one in `web/`, so this needs no special case. `.dogfood/package.json` and its lockfile are committed, and `node_modules` in `.gitignore` already keeps `.dogfood/node_modules/` out. The Stop hook in `.claude/settings.json`, the line in `CLAUDE.md` ("run `npx revelio-ai check` in `.dogfood/`"), `.claude/skills/` and `knowledge-base/` are committed. A contributor who did not run `npm ci --prefix .dogfood` sees a "hook error" when the agent stops: `docs/dogfooding.md` says to run it after a clone.
 
 ## Milestones
 
@@ -114,7 +114,7 @@ Each milestone is one commit that the Builder can review alone, with its tests w
 
 ### 6. This repo's install (after the release)
 
-- Files: `.gitignore`, `docs/dogfooding.md`, `CLAUDE.md` and `AGENTS.md` (the *Dogfooding* line), and what `init` writes (decision 8). `init` removes the line of `CLAUDE.local.md`, and the file with it, since it has nothing else. `.claude/settings.local.json` keeps the Builder's other hooks.
+- Files: `.dogfood/`, `docs/dogfooding.md`, `CLAUDE.md` and `AGENTS.md` (the *Dogfooding* line), and what `init` writes (decision 8). `init` removes the line of `CLAUDE.local.md`, and the file with it, since it has nothing else. `.claude/settings.local.json` keeps the Builder's other hooks.
 - The Builder reads `knowledge-base/` before its first commit: this repo is public.
 - Then tick milestone 0 of the Overview plan.
 

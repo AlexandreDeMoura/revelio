@@ -30,7 +30,7 @@ VS Code's `code-tunnel serve-web` runs VS Code as a local server, with a normal 
 
    Wait until `curl -s -o /dev/null -w '%{http_code}' http://localhost:8765/` prints `200`.
 
-3. Install `playwright-core` in `$S/pw` (it isn't a project dependency) and drive the page with headless Chrome. Open a folder that has a `knowledge-base/`, such as this repo when it's dogfooded or `../auxilia`.
+3. Install `playwright-core` in `$S/pw` (it isn't a project dependency) and drive the page with headless Chrome. Open a folder that has a `knowledge-base/`, such as this repo or `../auxilia`.
 
    ```js
    import { chromium } from "playwright-core";
